@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Weolbu Random Lunch</title>
+  <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <script type="module">
+    // Firebase App (the core Firebase SDK) is always required and must be listed first
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+
+    // Add SDKs for Firebase products that you want to use
+    import { getDatabase, ref, set, onValue, get } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+    // Your web app's Firebase configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyAeUOHG4Nh3Qr1u1yAtmeJi-80dYHmGXbo",
+      authDomain: "weolbu-random-lunch-db.firebaseapp.com",
+      databaseURL: "https://weolbu-random-lunch-db-default-rtdb.firebaseio.com",
+      projectId: "weolbu-random-lunch-db",
+      storageBucket: "weolbu-random-lunch-db.firebasestorage.app",
+      messagingSenderId: "676905017699",
+      appId: "1:676905017699:web:7529a9aa996911f730b356"
+    };
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const database = getDatabase(app);
+
+    // Make database & functions available globally for app.js (which currently runs as standard script)
+    window.firebaseDB = database;
+    window.fbRef = ref;
+    window.fbSet = set;
+    window.fbOnValue = onValue;
+    window.fbGet = get;
+  </script>
+</head>
+
+<body>
+  <div id="app">
+    <!-- Login View -->
+    <div id="login-view" class="view active">
+      <div class="login-card glass">
+        <h1>Weolbu Random Lunch</h1>
+        <div class="input-group">
+          <label for="nickname">닉네임</label>
+          <input type="text" id="nickname" placeholder="닉네임을 입력하세요">
+          <span id="login-error" class="error-msg hidden">닉네임을 입력해주세요</span>
+        </div>
+        <button id="login-btn" class="primary-btn">로그인</button>
+      </div>
+    </div>
+
+    <!-- Dashboard View -->
+    <div id="admin-view" class="view">
+      <nav class="navbar glass">
+        <div class="nav-left">
+          <h2>Weolbu Random Lunch</h2>
+        </div>
+        <div class="nav-right">
+          <span id="user-greeting">님</span>
+          <button id="logout-btn" class="text-btn">로그아웃</button>
+        </div>
+      </nav>
+
+      <!-- Admin Tabs -->
+      <div class="tabs glass-tabs" id="admin-tabs">
+        <button class="tab-btn active" data-tab="matching-tab">매칭</button>
+        <button class="tab-btn" data-tab="employees-tab">구성원 관리</button>
+        <button class="tab-btn" data-tab="history-tab">히스토리</button>
+      </div>
+
+      <main class="dashboard-content">
+
+        <!-- Matching Tab -->
+        <section id="matching-tab" class="tab-content active">
+
+          <!-- Admin Header -->
+          <div class="matching-header admin-only" id="admin-match-header">
+            <h3 style="text-align: left; margin-bottom: 0.5rem;">랜덤 런치 매칭</h3>
+            <p style="text-align: left;">현재 <span id="active-emp-count" class="highlight">0</span>명의 구성원이 참여 중입니다. (2~3인
+              1조)</p>
+            <p class="sub-text"
+              style="text-align: left; font-size:0.85rem; color: #6B7280; margin-top: 0.5rem; margin-bottom: 2rem;">💡
+              확정 후 변경이 필요하면 카드를 드래그 앤 드롭 하세요.</p>
+
+            <div
+              style="display: flex; gap: 1rem; align-items: center; background: #fff; padding: 1.5rem; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.02); border: 1px solid #e5e7eb;">
+              <div style="flex: 1; text-align: left;">
+                <label
+                  style="display:block; font-size: 0.85rem; font-weight: 500; color: #4B5563; margin-bottom: 0.25rem;">매칭
+                  날짜/주차 지정</label>
+                <input type="text" id="admin-date-input" value="2026-02-20 (8주차)"
+                  style="padding: 0.6rem 1rem; border: 1px solid #d1d5db; border-radius: 8px; width: 100%; max-width: 300px;">
+              </div>
+              <button id="run-matching-btn" class="primary-btn pulse" style="max-width: 200px; margin: 0;">랜덤 매칭
+                실행</button>
+            </div>
+          </div>
+
+          <!-- User Header (Matches user screenshots perfectly) -->
+          <div class="matching-header user-only hidden" id="user-match-header"
+            style="text-align: left; padding: 2rem 0; background: transparent; border: none; box-shadow: none;">
+            <h3 style="font-size: 1.5rem; margin-bottom: 0.5rem;">랜덤 런치 매칭</h3>
+            <p style="color: #6B7280; margin-bottom: 2rem;">활성 구성원 중 랜덤으로 2~3명씩 그룹을 만듭니다.</p>
+
+            <div id="participation-status-box" class="status-box"
+              style="display: block; width: 100%; margin-bottom: 1.5rem;">
+              해당 주의 매칭 결과를 기다리고 있습니다.
+            </div>
+
+            <button id="toggle-participation-btn" class="primary-btn toggle-btn" style="width: 100%;">
+              다시 매칭해주세요
+            </button>
+          </div>
+
+          <div class="results-container" style="margin-top: 2rem;">
+            <div class="results-header"
+              style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 1rem;">
+              <h3 style="font-size: 1.25rem; font-weight: 700;">매칭 결과</h3>
+              <div style="display: flex; gap: 1rem; align-items: center;">
+                <button id="save-history-btn" class="secondary-btn admin-only"
+                  style="padding: 0.5rem 1rem; font-size: 0.85rem; background: #10B981; color: white;">💾 현재 매칭
+                  저장</button>
+                <span id="current-week-label" style="color: #6B7280; font-size: 1rem; font-weight: 500;">2026-02-20
+                  (8주차)</span>
+              </div>
+            </div>
+            <div id="matching-results" class="results-grid">
+              <!-- Groups will be injected here via JS -->
+            </div>
+          </div>
+        </section>
+
+        <!-- Employees Tab -->
+        <section id="employees-tab" class="tab-content">
+          <div class="emp-header" style="max-width: 800px; margin: 0 auto 2.5rem; padding: 2.5rem;">
+            <h3>구성원 추가</h3>
+            <div class="add-emp-form" style="display: flex; flex-direction: column; gap: 1rem; margin-top: 1.5rem;">
+              <div style="display: flex; gap: 0.75rem;">
+                <input type="text" id="new-emp-name" placeholder="새 구성원 이름 (예: 루카스)"
+                  style="flex: 1; padding: 0.8rem 1rem;">
+                <input type="text" id="new-emp-team" placeholder="소속 팀 (예: 개발본부)"
+                  style="flex: 1; padding: 0.8rem 1rem;">
+              </div>
+              <div
+                style="display: flex; gap: 0.75rem; align-items: center; justify-content: space-between; background: #F9FAFB; padding: 0.75rem 1rem; border-radius: 12px; border: 1px solid #e5e7eb;">
+                <label
+                  style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.95rem; font-weight: 500; cursor: pointer;">
+                  <input type="checkbox" id="new-emp-newhire" style="width: 18px; height: 18px;"> 신규 입사자 🐥
+                </label>
+                <select id="new-emp-buddy"
+                  style="padding: 0.6rem 1rem; border-radius: 8px; border: 1px solid #d1d5db; font-family: inherit; width: 250px;">
+                  <option value="">-- 버디 선택 (선택사항) --</option>
+                  <!-- Populated by JS -->
+                </select>
+                <button id="add-emp-btn" class="secondary-btn"
+                  style="padding: 0.6rem 2rem; background: #2563EB; color: #fff;">단건 추가</button>
+              </div>
+
+              <div style="margin-top: 1.5rem; border-top: 2px dashed #E2E8F0; padding-top: 1.5rem;">
+                <label
+                  style="display: flex; justify-content: space-between; align-items: center; font-size: 0.95rem; font-weight: 600; margin-bottom: 0.5rem;">
+                  <span>엑셀 일괄 추가 (붙여넣기)</span>
+                  <span style="font-size: 0.8rem; font-weight: 400; color: #64748b;">형식: 이름 | 소속팀 | 신규(Y/N) |
+                    버디이름</span>
+                </label>
+                <textarea id="bulk-emp-input"
+                  placeholder="이름&#9;소속팀&#9;Y&#9;버디이름&#10;루카스&#9;개발본부&#9;N&#10;소피&#9;영업팀&#9;Y&#9;마크"
+                  style="width: 100%; height: 100px; padding: 1rem; border: 1px solid #E2E8F0; border-radius: 8px; font-family: inherit; font-size: 0.9rem; resize: vertical; margin-bottom: 0.5rem;"></textarea>
+                <div style="text-align: right;">
+                  <button id="bulk-add-btn" class="secondary-btn"
+                    style="padding: 0.6rem 1.5rem; background: #475569; color: white;">일괄 추가 실행</button>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <div style="max-width: 800px; margin: 0 auto;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+              <h3 style="font-size: 1.1rem; margin: 0;">현재 구성원 목록</h3>
+              <button id="delete-all-emp-btn" class="delete-btn"
+                style="padding: 0.4rem 0.8rem; background: #FEF2F2; color: #EF4444; border: 1px solid #FCA5A5;">전체 구성원
+                삭제</button>
+            </div>
+            <ul id="employee-list" class="glass-list">
+              <!-- Employee items will be injected here -->
+            </ul>
+          </div>
+        </section>
+
+        <!-- History Tab -->
+        <section id="history-tab" class="tab-content">
+          <div class="history-content glass-history"
+            style="max-width: 900px; margin: 0 auto; padding: 2rem; background: var(--surface); border-radius: 12px; border: 1px solid var(--surface-border);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+              <h3 style="font-size: 1.4rem; font-weight: 700; margin: 0;">매칭 히스토리</h3>
+              <button id="clear-history-btn" class="delete-btn" style="padding: 0.5rem 1rem;">히스토리 전체 삭제</button>
+            </div>
+            <div id="history-list" style="display: flex; flex-direction: column; gap: 1.5rem;">
+              <p class="empty-state" style="text-align: center; color: var(--text-muted); padding: 3rem 0;">아직 저장된 히스토리가
+                없습니다.</p>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+
+</html>
