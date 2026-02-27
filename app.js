@@ -65,10 +65,19 @@ document.addEventListener('DOMContentLoaded', () => {
         '개발본부': { bg: '#DBEAFE', text: '#1D4ED8' },
         'HQ팀': { bg: '#FEE2E2', text: '#B91C1C' },
         '프로덕트본부': { bg: '#D1FAE5', text: '#047857' },
-        '디자인팀': { bg: '#Fef3c7', text: '#B45309' },
+        '디자인팀': { bg: '#FEF3C7', text: '#B45309' },
         '마케팅팀': { bg: '#E0E7FF', text: '#4338CA' },
         '영업팀': { bg: '#FCE7F3', text: '#BE185D' },
-        '데이터팀': { bg: '#F3E8FF', text: '#7E22CE' }
+        '데이터팀': { bg: '#F3E8FF', text: '#7E22CE' },
+        '튜터팀': { bg: '#FFE4E6', text: '#E11D48' },
+        'CS파트': { bg: '#FFEDD5', text: '#C2410C' },
+        '오리지널팀': { bg: '#DCFCE7', text: '#15803D' },
+        '커뮤니티스쿼드': { bg: '#CFFAFE', text: '#0E7490' },
+        '클래스팀': { bg: '#E0F2FE', text: '#0369A1' },
+        '콘텐츠팀': { bg: '#EDE9FE', text: '#6D28D9' },
+        '부동산팀': { bg: '#FAE8FF', text: '#A21CAF' },
+        '프롭테크팀': { bg: '#F1F5F9', text: '#334155' },
+        '프롭테크/클래스스쿼드': { bg: '#E2E8F0', text: '#0F172A' }
     };
     function getTeamColor(team) { return teamColors[team] || { bg: '#F3F4F6', text: '#4B5563' }; }
 
