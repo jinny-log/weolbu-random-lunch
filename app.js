@@ -397,8 +397,10 @@ document.addEventListener('DOMContentLoaded', () => {
             let remainingEmps = [...unassigned];
 
             customRules.forEach(bucketTeams => {
-                let bucketEmps = remainingEmps.filter(e => bucketTeams.includes(e.team));
-                remainingEmps = remainingEmps.filter(e => !bucketTeams.includes(e.team));
+                // Ensure bucketTeams is an array, mostly to handle comma-separated string from Firebase
+                let teamsArray = Array.isArray(bucketTeams) ? bucketTeams : bucketTeams.split(',').map(t => t.trim());
+                let bucketEmps = remainingEmps.filter(e => teamsArray.includes(e.team));
+                remainingEmps = remainingEmps.filter(e => !teamsArray.includes(e.team));
                 processPool(bucketEmps);
             });
 
@@ -571,10 +573,10 @@ document.addEventListener('DOMContentLoaded', () => {
             let buddyInfo = '';
             if (emp.buddyId) {
                 const buddyObj = employees.find(e => e.id == emp.buddyId);
-                if (buddyObj) buddyInfo = `<span style="color:#D97706; font-size:0.85rem;">[🤝 버디: ${buddyObj.name}]</span>`;
+                if (buddyObj) buddyInfo = `<span style="color:#D97706; font-size:0.85rem;">[🤝 버디: ${buddyObj.name}님]</span>`;
             } else {
                 const menteeObj = employees.find(e => e.buddyId == emp.id);
-                if (menteeObj) buddyInfo = `<span style="color:#059669; font-size:0.85rem;">[🤝 ${menteeObj.name}의 버디]</span>`;
+                if (menteeObj) buddyInfo = `<span style="color:#059669; font-size:0.85rem;">[🤝 ${menteeObj.name}님의 버디]</span>`;
             }
             const newHireTag = emp.isNewHire ? '<span class="new-hire-badge">🐥</span>' : '';
             const colors = getTeamColor(emp.team);
