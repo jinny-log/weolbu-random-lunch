@@ -404,16 +404,30 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 }
 
-                if (pool.length === 4) {
+                if (pool.length === 1) {
+                    let p = pool.pop();
+                    if (leftoversArr) {
+                        leftoversArr.push(p);
+                    } else if (newDraft.length > 0) {
+                        newDraft[newDraft.length - 1].push(p);
+                    } else {
+                        newDraft.push([p]);
+                    }
+                } else if (pool.length === 2) {
+                    let g = buildDiverseGroup(2, pool, penaltyMatrix);
+                    validateAndPush(g, allowSameTeam, leftoversArr);
+                } else if (pool.length === 4) {
                     let g1 = buildDiverseGroup(2, pool, penaltyMatrix);
                     let g2 = buildDiverseGroup(2, pool, penaltyMatrix);
                     validateAndPush(g1, allowSameTeam, leftoversArr);
                     validateAndPush(g2, allowSameTeam, leftoversArr);
-                } else if (pool.length >= 3) {
-                    let g = buildDiverseGroup(3, pool, penaltyMatrix);
-                    validateAndPush(g, allowSameTeam, leftoversArr);
+                } else if (pool.length === 5) {
+                    let g1 = buildDiverseGroup(3, pool, penaltyMatrix);
+                    let g2 = buildDiverseGroup(2, pool, penaltyMatrix);
+                    validateAndPush(g1, allowSameTeam, leftoversArr);
+                    validateAndPush(g2, allowSameTeam, leftoversArr);
                 } else {
-                    let g = buildDiverseGroup(pool.length, pool, penaltyMatrix);
+                    let g = buildDiverseGroup(3, pool, penaltyMatrix);
                     validateAndPush(g, allowSameTeam, leftoversArr);
                 }
             }
