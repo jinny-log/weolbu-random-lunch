@@ -403,8 +403,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
             newDraft.forEach(g => {
+                if (g.length >= 3) return; // STRICTLY FORBID 4+ PERSON GROUPS
+
                 let isBuddyGroup = g.some(e => e.buddyId && g.some(b => b.id === e.buddyId));
-                let sizePenalty = g.length >= 4 ? 20000 : (g.length * 10);
+                let sizePenalty = g.length * 10;
                 if (isBuddyGroup && g.length >= 2) sizePenalty += 100000;
 
                 g.push(emp);
@@ -424,7 +426,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     bestGroup = g;
                 }
             });
-            bestGroup.push(emp);
+
+            if (bestGroup) {
+                bestGroup.push(emp);
+            } else {
+                newDraft.push([emp]); // If all groups are full (3), start a new one
+            }
         };
 
         function extractValidGroups(pool, isTwoTeamPool = false) {
@@ -440,11 +447,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 } else {
                     if (pool.length === 4) {
                         let g1 = buildDiverseGroup(2, pool, penaltyMatrix);
-                        let g2 = buildDiverseGroup(2, pool, penaltyMatrix);
-                        if (getGroupViolationScore(g1) === 0) newDraft.push(g1); else leftovers.push(...g1);
-                        if (getGroupViolationScore(g2) === 0) newDraft.push(g2); else leftovers.push(...g2);
-                    } else if (pool.length === 5) {
-                        let g1 = buildDiverseGroup(3, pool, penaltyMatrix);
                         let g2 = buildDiverseGroup(2, pool, penaltyMatrix);
                         if (getGroupViolationScore(g1) === 0) newDraft.push(g1); else leftovers.push(...g1);
                         if (getGroupViolationScore(g2) === 0) newDraft.push(g2); else leftovers.push(...g2);
