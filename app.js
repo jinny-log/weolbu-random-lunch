@@ -624,12 +624,33 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- Admin Tabs & Employee Management ---
+    let isAuthenticatedAdmin = false; // Session-level admin unlock
+
     document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.addEventListener('click', () => {
+            const targetTab = btn.dataset.tab;
+
+            // Strict block for Management Tabs unless logged in as 지니 and password unlocked
+            if (targetTab === 'employee-tab' || targetTab === 'rules-tab') {
+                if (!currentUser || currentUser.name !== '지니') {
+                    alert('권한이 없습니다! 오직 관리자(지니) 계정만 관리 탭에 접근할 수 있습니다.');
+                    return;
+                }
+
+                if (!isAuthenticatedAdmin) {
+                    const password = prompt('관리자 접근을 위해 비밀번호를 입력해주세요:');
+                    if (password !== 'weolbu1234!') {
+                        alert('비밀번호가 틀렸습니다.');
+                        return; // Block tab switch
+                    }
+                    isAuthenticatedAdmin = true; // Unlock for the rest of the session
+                }
+            }
+
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
             btn.classList.add('active');
-            document.getElementById(btn.dataset.tab).classList.add('active');
+            document.getElementById(targetTab).classList.add('active');
         });
     });
 
