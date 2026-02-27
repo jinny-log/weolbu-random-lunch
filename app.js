@@ -427,27 +427,36 @@ document.addEventListener('DOMContentLoaded', () => {
             bestGroup.push(emp);
         };
 
-        function extractValidGroups(pool) {
+        function extractValidGroups(pool, isTwoTeamPool = false) {
             let leftovers = [];
             while (pool.length > 0) {
-                if (pool.length === 4) {
-                    let g1 = buildDiverseGroup(2, pool, penaltyMatrix);
-                    let g2 = buildDiverseGroup(2, pool, penaltyMatrix);
-                    if (getGroupViolationScore(g1) === 0) newDraft.push(g1); else leftovers.push(...g1);
-                    if (getGroupViolationScore(g2) === 0) newDraft.push(g2); else leftovers.push(...g2);
-                } else if (pool.length === 5) {
-                    let g1 = buildDiverseGroup(3, pool, penaltyMatrix);
-                    let g2 = buildDiverseGroup(2, pool, penaltyMatrix);
-                    if (getGroupViolationScore(g1) === 0) newDraft.push(g1); else leftovers.push(...g1);
-                    if (getGroupViolationScore(g2) === 0) newDraft.push(g2); else leftovers.push(...g2);
-                } else if (pool.length >= 3) {
-                    let g = buildDiverseGroup(3, pool, penaltyMatrix);
-                    if (getGroupViolationScore(g) === 0) newDraft.push(g); else leftovers.push(...g);
-                } else if (pool.length === 2) {
-                    let g = buildDiverseGroup(2, pool, penaltyMatrix);
-                    if (getGroupViolationScore(g) === 0) newDraft.push(g); else leftovers.push(...g);
+                if (isTwoTeamPool) {
+                    if (pool.length >= 2) {
+                        let g = buildDiverseGroup(2, pool, penaltyMatrix);
+                        if (getGroupViolationScore(g) === 0) newDraft.push(g); else leftovers.push(...g);
+                    } else {
+                        leftovers.push(pool.pop());
+                    }
                 } else {
-                    leftovers.push(pool.pop());
+                    if (pool.length === 4) {
+                        let g1 = buildDiverseGroup(2, pool, penaltyMatrix);
+                        let g2 = buildDiverseGroup(2, pool, penaltyMatrix);
+                        if (getGroupViolationScore(g1) === 0) newDraft.push(g1); else leftovers.push(...g1);
+                        if (getGroupViolationScore(g2) === 0) newDraft.push(g2); else leftovers.push(...g2);
+                    } else if (pool.length === 5) {
+                        let g1 = buildDiverseGroup(3, pool, penaltyMatrix);
+                        let g2 = buildDiverseGroup(2, pool, penaltyMatrix);
+                        if (getGroupViolationScore(g1) === 0) newDraft.push(g1); else leftovers.push(...g1);
+                        if (getGroupViolationScore(g2) === 0) newDraft.push(g2); else leftovers.push(...g2);
+                    } else if (pool.length >= 3) {
+                        let g = buildDiverseGroup(3, pool, penaltyMatrix);
+                        if (getGroupViolationScore(g) === 0) newDraft.push(g); else leftovers.push(...g);
+                    } else if (pool.length === 2) {
+                        let g = buildDiverseGroup(2, pool, penaltyMatrix);
+                        if (getGroupViolationScore(g) === 0) newDraft.push(g); else leftovers.push(...g);
+                    } else {
+                        leftovers.push(pool.pop());
+                    }
                 }
             }
             return leftovers;
@@ -462,7 +471,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 let bucketEmps = remainingEmps.filter(e => teamsArray.includes(e.team));
                 remainingEmps = remainingEmps.filter(e => !teamsArray.includes(e.team));
 
-                let rejects = extractValidGroups(bucketEmps);
+                let isTwoTeamPool = (teamsArray.length === 2);
+                let rejects = extractValidGroups(bucketEmps, isTwoTeamPool);
                 globalLeftovers.push(...rejects);
             });
 
