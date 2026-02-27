@@ -478,6 +478,22 @@ button {
   background: #FEE2E2;
 }
 
+.edit-btn {
+  color: #3B82F6;
+  background: #EFF6FF;
+  font-size: 0.875rem;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  margin-right: 0.5rem;
+}
+
+.edit-btn:hover {
+  background: #DBEAFE;
+}
+
 /* Toggle Slider */
 .switch {
   position: relative;

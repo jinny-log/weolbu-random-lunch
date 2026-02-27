@@ -33,6 +33,12 @@ document.addEventListener('DOMContentLoaded', () => {
     let employees = defaultEmployees;
     let groups = []; // Active draft
     let matchHistory = [];
+    let customRules = [
+        ['HQ팀', '튜터팀', 'CS파트'],
+        ['오리지널팀', '커뮤니티스쿼드'],
+        ['클래스팀', '콘텐츠팀', '부동산팀'],
+        ['프롭테크팀', '프롭테크/클래스스쿼드']
+    ];
     let savedDateLabel = "2024-XX-XX (X주차)";
     let currentUser = null;
 
@@ -84,8 +90,18 @@ document.addEventListener('DOMContentLoaded', () => {
         runBtn: document.getElementById('run-matching-btn'),
         resultsCount: document.getElementById('active-emp-count'),
         container: document.getElementById('matching-results'),
-        weekLabel: document.getElementById('current-week-label')
+        weekLabel: document.getElementById('current-week-label'),
+        useMarchRule: document.getElementById('use-march-rule'),
+        addEmptyGroupBtn: document.getElementById('add-empty-group-btn')
     };
+
+    if (matching.addEmptyGroupBtn) {
+        matching.addEmptyGroupBtn.addEventListener('click', () => {
+            groups.push([]);
+            saveDraft(groups);
+            renderGroups(groups, matching.weekLabel.textContent, true);
+        });
+    }
 
     const empManager = {
         list: document.getElementById('employee-list'),
@@ -96,6 +112,12 @@ document.addEventListener('DOMContentLoaded', () => {
         addBtn: document.getElementById('add-emp-btn'),
         bulkInput: document.getElementById('bulk-emp-input'),
         bulkAddBtn: document.getElementById('bulk-add-btn')
+    };
+
+    const rulesManager = {
+        container: document.getElementById('rules-container'),
+        addBtn: document.getElementById('add-rule-bucket-btn'),
+        saveBtn: document.getElementById('save-rules-btn')
     };
 
     const historyManager = {
@@ -153,7 +175,16 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        // 4. Listen for Draft changes (Live Preview Sync!)
+        // 4. Listen for Rules changes
+        fbOnValue(fbRef(db, 'rules'), (snapshot) => {
+            const val = snapshot.val();
+            if (val) {
+                customRules = val;
+            }
+            renderRulesList();
+        });
+
+        // 5. Listen for Draft changes (Live Preview Sync!)
         fbOnValue(fbRef(db, 'draft'), (snapshot) => {
             groups = snapshot.val() || [];
             if (currentUser) {
@@ -324,28 +355,47 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // Buddy logic
-        const activeNewHires = unassigned.filter(e => e.isNewHire && e.buddyId);
-        activeNewHires.forEach(nh => {
-            const buddyIndex = unassigned.findIndex(e => e.id === nh.buddyId);
+        const buddyPairs = unassigned.filter(e => e.buddyId);
+        buddyPairs.forEach(mentee => {
+            let menteeIndex = unassigned.findIndex(e => e.id === mentee.id);
+            if (menteeIndex === -1) return; // already paired
+
+            let buddyIndex = unassigned.findIndex(e => e.id === mentee.buddyId);
             if (buddyIndex !== -1) {
-                let buddy = unassigned.splice(buddyIndex, 1)[0];
-                let nhIndex = unassigned.findIndex(e => e.id === nh.id);
-                unassigned.splice(nhIndex, 1);
-                newDraft.push([nh, buddy]);
+                let buddy = unassigned[buddyIndex];
+                let theMentee = unassigned[menteeIndex];
+                unassigned = unassigned.filter(e => e.id !== buddy.id && e.id !== theMentee.id);
+                newDraft.push([theMentee, buddy]);
             }
         });
 
         const penaltyMatrix = buildPenaltyMatrix();
 
-        while (unassigned.length > 0) {
-            if (unassigned.length === 4) {
-                newDraft.push(buildDiverseGroup(2, unassigned, penaltyMatrix));
-                newDraft.push(buildDiverseGroup(2, unassigned, penaltyMatrix));
-            } else if (unassigned.length >= 3) {
-                newDraft.push(buildDiverseGroup(3, unassigned, penaltyMatrix));
-            } else {
-                newDraft.push(buildDiverseGroup(unassigned.length, unassigned, penaltyMatrix));
+        const processPool = (pool) => {
+            while (pool.length > 0) {
+                if (pool.length === 4) {
+                    newDraft.push(buildDiverseGroup(2, pool, penaltyMatrix));
+                    newDraft.push(buildDiverseGroup(2, pool, penaltyMatrix));
+                } else if (pool.length >= 3) {
+                    newDraft.push(buildDiverseGroup(3, pool, penaltyMatrix));
+                } else {
+                    newDraft.push(buildDiverseGroup(pool.length, pool, penaltyMatrix));
+                }
             }
+        };
+
+        if (matching.useMarchRule && matching.useMarchRule.checked) {
+            let remainingEmps = [...unassigned];
+
+            customRules.forEach(bucketTeams => {
+                let bucketEmps = remainingEmps.filter(e => bucketTeams.includes(e.team));
+                remainingEmps = remainingEmps.filter(e => !bucketTeams.includes(e.team));
+                processPool(bucketEmps);
+            });
+
+            processPool(remainingEmps);
+        } else {
+            processPool(unassigned);
         }
 
         saveDraft(newDraft); // Syncs Draft to Firebase immediately
@@ -414,19 +464,23 @@ document.addEventListener('DOMContentLoaded', () => {
             let badgeHtml = isMyGroup ? `<span class="my-badge">내 그룹</span>` : '';
             if (isDraftView) badgeHtml += `<span style="background:#FEF3C7; color:#B45309; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem; margin-left:0.5rem;">[임시 프리뷰]</span>`;
 
-            let isBuddyGroup = false;
-            const groupNewHires = group.filter(e => e.isNewHire && e.buddyId);
-            if (groupNewHires.length > 0) {
-                if (group.some(e => e.id === groupNewHires[0].buddyId)) isBuddyGroup = true;
-            }
+            let isBuddyGroup = group.some(emp => emp.buddyId && group.some(b => b.id === emp.buddyId));
             let buddyGroupBadge = isBuddyGroup ? `<span class="buddy-badge">🤝 버디 조</span>` : '';
 
             let membersHtml = group.map(emp => {
-                const buddyIcon = emp.isNewHire ? '<span class="new-hire-badge" title="신규 입사자">🐥</span>' : '';
+                const newHireIcon = emp.isNewHire ? '<span class="new-hire-badge" title="신규 입사자">🐥</span>' : '';
+
+                const isMentee = emp.buddyId && group.some(e => e.id === emp.buddyId);
+                const isMentor = group.some(e => e.buddyId === emp.id);
+
+                let buddyIconHtml = '';
+                if (isMentee) buddyIconHtml = '<span style="font-size:0.8rem; background:#FCE7F3; color:#DB2777; padding:0.1rem 0.4rem; border-radius:4px; margin-left:4px;">버디(신규)</span>';
+                else if (isMentor) buddyIconHtml = '<span style="font-size:0.8rem; background:#D1FAE5; color:#047857; padding:0.1rem 0.4rem; border-radius:4px; margin-left:4px;">버디(기존)</span>';
+
                 const colors = getTeamColor(emp.team);
                 return `
           <li class="member-item" data-id="${emp.id}" ${isAdmin ? 'draggable="true"' : ''}>
-            <div class="member-name">${emp.name} ${buddyIcon}</div>
+            <div class="member-name">${emp.name} ${newHireIcon} ${buddyIconHtml}</div>
             <div class="member-team team-label" style="background:${colors.bg}; color:${colors.text}">${emp.team}</div>
           </li>
         `;
@@ -461,7 +515,7 @@ document.addEventListener('DOMContentLoaded', () => {
         cardElement.classList.remove('drag-over');
         if (!draggedMember || sourceGroupIndex === null || sourceGroupIndex === targetGroupIndex) return;
 
-        const isTargetBuddyGroup = groups[targetGroupIndex].some(emp => emp.isNewHire && emp.buddyId !== null && groups[targetGroupIndex].some(b => b.id === emp.buddyId));
+        const isTargetBuddyGroup = groups[targetGroupIndex].some(emp => emp.buddyId !== null && groups[targetGroupIndex].some(b => b.id === emp.buddyId));
         if (isTargetBuddyGroup && groups[targetGroupIndex].length >= 2) {
             alert('버디 조는 2명(신규 입사자 + 버디)까지만 구성할 수 있습니다.');
             return;
@@ -505,8 +559,14 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!employees) return;
         empManager.list.innerHTML = '';
         employees.forEach(emp => {
-            const buddyObj = emp.buddyId ? employees.find(e => e.id == emp.buddyId) : null;
-            const buddyInfo = buddyObj ? `<span style="color:#D97706; font-size:0.85rem;">[버디: ${buddyObj.name}]</span>` : '';
+            let buddyInfo = '';
+            if (emp.buddyId) {
+                const buddyObj = employees.find(e => e.id == emp.buddyId);
+                if (buddyObj) buddyInfo = `<span style="color:#D97706; font-size:0.85rem;">[🤝 버디: ${buddyObj.name}]</span>`;
+            } else {
+                const menteeObj = employees.find(e => e.buddyId == emp.id);
+                if (menteeObj) buddyInfo = `<span style="color:#059669; font-size:0.85rem;">[🤝 ${menteeObj.name}의 버디]</span>`;
+            }
             const newHireTag = emp.isNewHire ? '<span class="new-hire-badge">🐥</span>' : '';
             const colors = getTeamColor(emp.team);
 
@@ -525,9 +585,19 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
           </div>
         </div>
-        <button class="delete-btn" data-id="${emp.id}">삭제</button>
+        <div>
+          <button class="edit-btn" data-id="${emp.id}">수정</button>
+          <button class="delete-btn" data-id="${emp.id}">삭제</button>
+        </div>
       `;
             empManager.list.appendChild(li);
+        });
+
+        document.querySelectorAll('.edit-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const emp = employees.find(emp => emp.id == e.target.dataset.id);
+                if (emp) startEditEmployee(emp);
+            });
         });
 
         document.querySelectorAll('.delete-btn').forEach(btn => {
@@ -546,6 +616,20 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    let editingEmpId = null;
+
+    function startEditEmployee(emp) {
+        empManager.name.value = emp.name;
+        empManager.team.value = emp.team;
+        empManager.newHire.checked = emp.isNewHire;
+        empManager.buddySelect.value = emp.buddyId || '';
+
+        editingEmpId = emp.id;
+        empManager.addBtn.textContent = '정보 수정';
+        empManager.addBtn.style.background = '#10B981';
+        empManager.name.focus();
+    }
+
     empManager.addBtn.addEventListener('click', () => {
         const name = empManager.name.value.trim();
         const team = empManager.team.value.trim() || '소속 미지정';
@@ -553,8 +637,22 @@ document.addEventListener('DOMContentLoaded', () => {
         const buddyId = empManager.buddySelect.value ? parseInt(empManager.buddySelect.value) : null;
 
         if (name) {
-            if (employees.some(emp => emp.name === name)) return alert('이미 존재하는 구성원입니다.');
-            employees.push({ id: Date.now(), name, team, isParticipating: true, isNewHire, buddyId });
+            if (editingEmpId) {
+                if (employees.some(emp => emp.name === name && emp.id !== editingEmpId)) return alert('이미 존재하는 이름입니다.');
+                let emp = employees.find(e => e.id === editingEmpId);
+                if (emp) {
+                    emp.name = name;
+                    emp.team = team;
+                    emp.isNewHire = isNewHire;
+                    emp.buddyId = buddyId;
+                }
+                editingEmpId = null;
+                empManager.addBtn.textContent = '단건 추가';
+                empManager.addBtn.style.background = '#2563EB';
+            } else {
+                if (employees.some(emp => emp.name === name)) return alert('이미 존재하는 구성원입니다.');
+                employees.push({ id: Date.now(), name, team, isParticipating: true, isNewHire, buddyId });
+            }
 
             saveEmployees();
 
@@ -636,6 +734,62 @@ document.addEventListener('DOMContentLoaded', () => {
             alert(`추가된 구성원이 없습니다.\n\n확인 필요: ${errors.join(', ')}`);
         }
     });
+
+    // --- Rules Management Logic ---
+    function renderRulesList() {
+        if (!rulesManager.container) return;
+        rulesManager.container.innerHTML = '';
+
+        if (!customRules || customRules.length === 0) {
+            rulesManager.container.innerHTML = '<p class="empty-state" style="text-align: center; color: var(--text-muted); padding: 1rem 0;">등록된 커스텀 규칙이 없습니다.</p>';
+            return;
+        }
+
+        customRules.forEach((bucket, idx) => {
+            const bucketDiv = document.createElement('div');
+            bucketDiv.style.cssText = 'background: #F8FAFC; padding: 1rem; border-radius: 8px; border: 1px solid #E2E8F0; display: flex; align-items: center; gap: 1rem;';
+
+            bucketDiv.innerHTML = `
+                 <div style="font-weight: 600; color: #475569; min-width: 60px;">${idx + 1} 풀</div>
+                 <input type="text" class="rule-input" data-index="${idx}" value="${bucket.join(', ')}" placeholder="팀명 입력 (쉼표로 구분. 예: HQ팀, 튜터팀)" style="flex: 1; padding: 0.6rem; border: 1px solid #CBD5E1; border-radius: 6px;">
+                 <button class="delete-btn delete-rule-btn" data-index="${idx}" style="padding: 0.4rem 0.8rem;">삭제</button>
+             `;
+            rulesManager.container.appendChild(bucketDiv);
+        });
+
+        document.querySelectorAll('.rule-input').forEach(input => {
+            input.addEventListener('input', (e) => {
+                const idx = e.target.getAttribute('data-index');
+                const teams = e.target.value.split(',').map(t => t.trim()).filter(t => t.length > 0);
+                customRules[idx] = teams;
+            });
+        });
+
+        document.querySelectorAll('.delete-rule-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const idx = e.target.getAttribute('data-index');
+                customRules.splice(idx, 1);
+                renderRulesList();
+            });
+        });
+    }
+
+    if (rulesManager.addBtn) {
+        rulesManager.addBtn.addEventListener('click', () => {
+            customRules.push([]);
+            renderRulesList();
+        });
+    }
+
+    if (rulesManager.saveBtn) {
+        rulesManager.saveBtn.addEventListener('click', () => {
+            // Clean up empty buckets before saving
+            customRules = customRules.filter(bucket => bucket.length > 0);
+            renderRulesList();
+            fbSet(fbRef(db, 'rules'), customRules);
+            alert('매칭 규칙이 성공적으로 저장되었습니다!');
+        });
+    }
 
     // --- History App Logic ---
     function renderHistoryList() {

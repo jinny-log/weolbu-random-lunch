@@ -69,6 +69,7 @@
       <div class="tabs glass-tabs" id="admin-tabs">
         <button class="tab-btn active" data-tab="matching-tab">매칭</button>
         <button class="tab-btn" data-tab="employees-tab">구성원 관리</button>
+        <button class="tab-btn" data-tab="rules-tab">매칭 규칙 관리</button>
         <button class="tab-btn" data-tab="history-tab">히스토리</button>
       </div>
 
@@ -94,6 +95,11 @@
                   날짜/주차 지정</label>
                 <input type="text" id="admin-date-input" value="2026-02-20 (8주차)"
                   style="padding: 0.6rem 1rem; border: 1px solid #d1d5db; border-radius: 8px; width: 100%; max-width: 300px;">
+                <label
+                  style="display:flex; align-items:center; gap: 0.5rem; margin-top: 0.5rem; font-size: 0.85rem; cursor:pointer;">
+                  <input type="checkbox" id="use-march-rule" style="width:16px; height:16px;" checked> 설정된 커스텀 그룹 매칭 규칙
+                  적용
+                </label>
               </div>
               <button id="run-matching-btn" class="primary-btn pulse" style="max-width: 200px; margin: 0;">랜덤 매칭
                 실행</button>
@@ -121,6 +127,8 @@
               style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 1rem;">
               <h3 style="font-size: 1.25rem; font-weight: 700;">매칭 결과</h3>
               <div style="display: flex; gap: 1rem; align-items: center;">
+                <button id="add-empty-group-btn" class="secondary-btn admin-only"
+                  style="padding: 0.5rem 1rem; font-size: 0.85rem;">➕ 빈 그룹 추가</button>
                 <button id="save-history-btn" class="secondary-btn admin-only"
                   style="padding: 0.5rem 1rem; font-size: 0.85rem; background: #10B981; color: white;">💾 현재 매칭
                   저장</button>
@@ -189,6 +197,31 @@
             <ul id="employee-list" class="glass-list">
               <!-- Employee items will be injected here -->
             </ul>
+          </div>
+        </section>
+
+        <!-- Rules Tab -->
+        <section id="rules-tab" class="tab-content">
+          <div class="emp-header" style="max-width: 800px; margin: 0 auto 2.5rem; padding: 2.5rem;">
+            <h3>월별 커스텀 매칭 규칙 관리</h3>
+            <p style="color: #6B7280; font-size: 0.9rem; margin-bottom: 2rem;">
+              같은 풀(Bucket)에 묶여있는 팀끼리만 랜덤 매칭을 진행합니다.<br>
+              팀 이름은 쉼표(,)로 구분하여 정확히 입력해주세요. (예: HQ팀, 튜터팀, CS파트)
+            </p>
+
+            <div id="rules-container" style="display: flex; flex-direction: column; gap: 1rem; margin-bottom: 1.5rem;">
+              <!-- Rules will be injected here via JS -->
+            </div>
+
+            <button id="add-rule-bucket-btn" class="secondary-btn"
+              style="width: 100%; padding: 0.8rem; margin-bottom: 2rem; border: 1px dashed #94A3B8; background: transparent;">
+              + 새로운 조 풀(Bucket) 추가
+            </button>
+
+            <div style="text-align: right; border-top: 1px solid #E2E8F0; padding-top: 1.5rem;">
+              <button id="save-rules-btn" class="primary-btn pulse" style="max-width: 200px; margin: 0;">💾 규칙 동기화 및
+                저장</button>
+            </div>
           </div>
         </section>
 
