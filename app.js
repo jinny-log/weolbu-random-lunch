@@ -380,33 +380,61 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const penaltyMatrix = buildPenaltyMatrix();
 
-        const processPool = (pool) => {
+        const validateAndPush = (group, allowSameTeam, leftoversArr) => {
+            if (group.length === 0) return;
+            if (!allowSameTeam && leftoversArr) {
+                // Reject if group is only 1 person or homogenous team
+                let unique = new Set(group.map(e => e.team));
+                if (unique.size <= 1) {
+                    leftoversArr.push(...group);
+                    return;
+                }
+            }
+            newDraft.push(group);
+        };
+
+        const processPool = (pool, allowSameTeam = false, leftoversArr = null) => {
             while (pool.length > 0) {
+                if (!allowSameTeam && leftoversArr) {
+                    let uniqueTeamsInPool = new Set(pool.map(e => e.team));
+                    if (uniqueTeamsInPool.size <= 1) {
+                        leftoversArr.push(...pool);
+                        pool.length = 0;
+                        break;
+                    }
+                }
+
                 if (pool.length === 4) {
-                    newDraft.push(buildDiverseGroup(2, pool, penaltyMatrix));
-                    newDraft.push(buildDiverseGroup(2, pool, penaltyMatrix));
+                    let g1 = buildDiverseGroup(2, pool, penaltyMatrix);
+                    let g2 = buildDiverseGroup(2, pool, penaltyMatrix);
+                    validateAndPush(g1, allowSameTeam, leftoversArr);
+                    validateAndPush(g2, allowSameTeam, leftoversArr);
                 } else if (pool.length >= 3) {
-                    newDraft.push(buildDiverseGroup(3, pool, penaltyMatrix));
+                    let g = buildDiverseGroup(3, pool, penaltyMatrix);
+                    validateAndPush(g, allowSameTeam, leftoversArr);
                 } else {
-                    newDraft.push(buildDiverseGroup(pool.length, pool, penaltyMatrix));
+                    let g = buildDiverseGroup(pool.length, pool, penaltyMatrix);
+                    validateAndPush(g, allowSameTeam, leftoversArr);
                 }
             }
         };
 
         if (matching.useMarchRule && matching.useMarchRule.checked) {
             let remainingEmps = [...unassigned];
+            let globalLeftovers = [];
 
             customRules.forEach(bucketTeams => {
-                // Ensure bucketTeams is an array, mostly to handle comma-separated string from Firebase
                 let teamsArray = Array.isArray(bucketTeams) ? bucketTeams : bucketTeams.split(',').map(t => t.trim());
                 let bucketEmps = remainingEmps.filter(e => teamsArray.includes(e.team));
                 remainingEmps = remainingEmps.filter(e => !teamsArray.includes(e.team));
-                processPool(bucketEmps);
+
+                processPool(bucketEmps, false, globalLeftovers);
             });
 
-            processPool(remainingEmps);
+            remainingEmps.push(...globalLeftovers);
+            processPool(remainingEmps, true, null);
         } else {
-            processPool(unassigned);
+            processPool(unassigned, true, null);
         }
 
         saveDraft(newDraft); // Syncs Draft to Firebase immediately
