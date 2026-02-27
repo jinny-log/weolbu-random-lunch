@@ -434,10 +434,15 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         };
 
-        function extractValidGroups(pool, isTwoTeamPool = false) {
+        function extractValidGroups(pool, maxTeamCount = 3) {
             let leftovers = [];
+            // Cap group sizes to avoid arbitrarily large arrays when teams > 3
+            // The user wanted: If 2 teams -> 2 person groups. If 3 teams -> 3 person groups.
+            // Absolute max remains 3 for general matching, unless bucket explicitly forced.
+            const targetSize = Math.min(maxTeamCount, 3);
+
             while (pool.length > 0) {
-                if (isTwoTeamPool) {
+                if (targetSize === 2) {
                     if (pool.length >= 2) {
                         let g = buildDiverseGroup(2, pool, penaltyMatrix);
                         if (getGroupViolationScore(g) === 0) newDraft.push(g); else leftovers.push(...g);
@@ -473,13 +478,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 let bucketEmps = remainingEmps.filter(e => teamsArray.includes(e.team));
                 remainingEmps = remainingEmps.filter(e => !teamsArray.includes(e.team));
 
-                let isTwoTeamPool = (teamsArray.length === 2);
-                let rejects = extractValidGroups(bucketEmps, isTwoTeamPool);
+                let maxTeamCount = teamsArray.length;
+                let rejects = extractValidGroups(bucketEmps, maxTeamCount);
                 globalLeftovers.push(...rejects);
             });
 
             remainingEmps.push(...globalLeftovers);
-            let absoluteRejects = extractValidGroups(remainingEmps);
+            let absoluteRejects = extractValidGroups(remainingEmps, 3); // Defaults back to 3
 
             absoluteRejects.forEach(emp => forceInsert(emp));
 
