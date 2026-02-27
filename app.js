@@ -380,58 +380,78 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const penaltyMatrix = buildPenaltyMatrix();
 
-        const validateAndPush = (group, allowSameTeam, leftoversArr) => {
-            if (group.length === 0) return;
-            if (!allowSameTeam && leftoversArr) {
-                // Reject if group is only 1 person or homogenous team
-                let unique = new Set(group.map(e => e.team));
-                if (unique.size <= 1) {
-                    leftoversArr.push(...group);
-                    return;
-                }
+        function getGroupViolationScore(group) {
+            let counts = {};
+            group.forEach(e => counts[e.team] = (counts[e.team] || 0) + 1);
+            let valArr = Object.values(counts);
+            let maxCount = Math.max(...(valArr.length ? valArr : [0]));
+            let uniqueTeams = valArr.length;
+
+            let score = 0;
+            // Heavily penalize groups with only 1 team
+            if (group.length >= 2 && uniqueTeams === 1) score += 5000;
+            // Penalize groups with more than 2 members from the same team
+            if (maxCount > 2) score += 2000 * (maxCount - 2);
+            return score;
+        }
+
+        const forceInsert = (emp) => {
+            let bestGroup = null;
+            let bestScore = Infinity;
+            if (newDraft.length === 0) {
+                newDraft.push([emp]);
+                return;
             }
-            newDraft.push(group);
+            newDraft.forEach(g => {
+                let isBuddyGroup = g.some(e => e.buddyId && g.some(b => b.id === e.buddyId));
+                let sizePenalty = g.length >= 4 ? 20000 : (g.length * 10);
+                if (isBuddyGroup && g.length >= 2) sizePenalty += 100000;
+
+                g.push(emp);
+                let violation = getGroupViolationScore(g);
+                g.pop();
+
+                let penalty = 0;
+                g.forEach(mem => {
+                    if (penaltyMatrix[emp.id] && penaltyMatrix[emp.id][mem.id]) {
+                        penalty += penaltyMatrix[emp.id][mem.id] * 10;
+                    }
+                });
+
+                let totalScore = violation * 3000 + penalty + sizePenalty;
+                if (totalScore < bestScore) {
+                    bestScore = totalScore;
+                    bestGroup = g;
+                }
+            });
+            bestGroup.push(emp);
         };
 
-        const processPool = (pool, allowSameTeam = false, leftoversArr = null) => {
+        function extractValidGroups(pool) {
+            let leftovers = [];
             while (pool.length > 0) {
-                if (!allowSameTeam && leftoversArr) {
-                    let uniqueTeamsInPool = new Set(pool.map(e => e.team));
-                    if (uniqueTeamsInPool.size <= 1) {
-                        leftoversArr.push(...pool);
-                        pool.length = 0;
-                        break;
-                    }
-                }
-
-                if (pool.length === 1) {
-                    let p = pool.pop();
-                    if (leftoversArr) {
-                        leftoversArr.push(p);
-                    } else if (newDraft.length > 0) {
-                        newDraft[newDraft.length - 1].push(p);
-                    } else {
-                        newDraft.push([p]);
-                    }
-                } else if (pool.length === 2) {
-                    let g = buildDiverseGroup(2, pool, penaltyMatrix);
-                    validateAndPush(g, allowSameTeam, leftoversArr);
-                } else if (pool.length === 4) {
+                if (pool.length === 4) {
                     let g1 = buildDiverseGroup(2, pool, penaltyMatrix);
                     let g2 = buildDiverseGroup(2, pool, penaltyMatrix);
-                    validateAndPush(g1, allowSameTeam, leftoversArr);
-                    validateAndPush(g2, allowSameTeam, leftoversArr);
+                    if (getGroupViolationScore(g1) === 0) newDraft.push(g1); else leftovers.push(...g1);
+                    if (getGroupViolationScore(g2) === 0) newDraft.push(g2); else leftovers.push(...g2);
                 } else if (pool.length === 5) {
                     let g1 = buildDiverseGroup(3, pool, penaltyMatrix);
                     let g2 = buildDiverseGroup(2, pool, penaltyMatrix);
-                    validateAndPush(g1, allowSameTeam, leftoversArr);
-                    validateAndPush(g2, allowSameTeam, leftoversArr);
-                } else {
+                    if (getGroupViolationScore(g1) === 0) newDraft.push(g1); else leftovers.push(...g1);
+                    if (getGroupViolationScore(g2) === 0) newDraft.push(g2); else leftovers.push(...g2);
+                } else if (pool.length >= 3) {
                     let g = buildDiverseGroup(3, pool, penaltyMatrix);
-                    validateAndPush(g, allowSameTeam, leftoversArr);
+                    if (getGroupViolationScore(g) === 0) newDraft.push(g); else leftovers.push(...g);
+                } else if (pool.length === 2) {
+                    let g = buildDiverseGroup(2, pool, penaltyMatrix);
+                    if (getGroupViolationScore(g) === 0) newDraft.push(g); else leftovers.push(...g);
+                } else {
+                    leftovers.push(pool.pop());
                 }
             }
-        };
+            return leftovers;
+        }
 
         if (matching.useMarchRule && matching.useMarchRule.checked) {
             let remainingEmps = [...unassigned];
@@ -442,13 +462,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 let bucketEmps = remainingEmps.filter(e => teamsArray.includes(e.team));
                 remainingEmps = remainingEmps.filter(e => !teamsArray.includes(e.team));
 
-                processPool(bucketEmps, false, globalLeftovers);
+                let rejects = extractValidGroups(bucketEmps);
+                globalLeftovers.push(...rejects);
             });
 
             remainingEmps.push(...globalLeftovers);
-            processPool(remainingEmps, true, null);
+            let absoluteRejects = extractValidGroups(remainingEmps);
+
+            absoluteRejects.forEach(emp => forceInsert(emp));
+
         } else {
-            processPool(unassigned, true, null);
+            let absoluteRejects = extractValidGroups(unassigned);
+            absoluteRejects.forEach(emp => forceInsert(emp));
         }
 
         saveDraft(newDraft); // Syncs Draft to Firebase immediately
