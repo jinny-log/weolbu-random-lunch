@@ -399,11 +399,14 @@ document.addEventListener('DOMContentLoaded', () => {
             let bestGroup = null;
             let bestScore = Infinity;
             if (newDraft.length === 0) {
-                newDraft.push([emp]);
+                let g = [emp];
+                g._maxLimit = 3;
+                newDraft.push(g);
                 return;
             }
             newDraft.forEach(g => {
-                if (g.length >= 3) return; // STRICTLY FORBID 4+ PERSON GROUPS
+                let currentMaxLimit = g._maxLimit || 3;
+                if (g.length >= currentMaxLimit) return; // STRICTLY FORBID EXCEEDING BUCKET MAX
 
                 let isBuddyGroup = g.some(e => e.buddyId && g.some(b => b.id === e.buddyId));
                 let sizePenalty = g.length * 10;
@@ -430,22 +433,26 @@ document.addEventListener('DOMContentLoaded', () => {
             if (bestGroup) {
                 bestGroup.push(emp);
             } else {
-                newDraft.push([emp]); // If all groups are full (3), start a new one
+                let g = [emp];
+                g._maxLimit = 3; // free groups default to 3
+                newDraft.push(g);
             }
+        };
+
+        const pushDraft = (group, maxAllowed) => {
+            group._maxLimit = maxAllowed;
+            newDraft.push(group);
         };
 
         function extractValidGroups(pool, maxTeamCount = 3) {
             let leftovers = [];
-            // Cap group sizes to avoid arbitrarily large arrays when teams > 3
-            // The user wanted: If 2 teams -> 2 person groups. If 3 teams -> 3 person groups.
-            // Absolute max remains 3 for general matching, unless bucket explicitly forced.
             const targetSize = Math.min(maxTeamCount, 3);
 
             while (pool.length > 0) {
                 if (targetSize === 2) {
                     if (pool.length >= 2) {
                         let g = buildDiverseGroup(2, pool, penaltyMatrix);
-                        if (getGroupViolationScore(g) === 0) newDraft.push(g); else leftovers.push(...g);
+                        if (getGroupViolationScore(g) === 0) pushDraft(g, 2); else leftovers.push(...g);
                     } else {
                         leftovers.push(pool.pop());
                     }
@@ -453,14 +460,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (pool.length === 4) {
                         let g1 = buildDiverseGroup(2, pool, penaltyMatrix);
                         let g2 = buildDiverseGroup(2, pool, penaltyMatrix);
-                        if (getGroupViolationScore(g1) === 0) newDraft.push(g1); else leftovers.push(...g1);
-                        if (getGroupViolationScore(g2) === 0) newDraft.push(g2); else leftovers.push(...g2);
+                        if (getGroupViolationScore(g1) === 0) pushDraft(g1, 3); else leftovers.push(...g1);
+                        if (getGroupViolationScore(g2) === 0) pushDraft(g2, 3); else leftovers.push(...g2);
                     } else if (pool.length >= 3) {
                         let g = buildDiverseGroup(3, pool, penaltyMatrix);
-                        if (getGroupViolationScore(g) === 0) newDraft.push(g); else leftovers.push(...g);
+                        if (getGroupViolationScore(g) === 0) pushDraft(g, 3); else leftovers.push(...g);
                     } else if (pool.length === 2) {
                         let g = buildDiverseGroup(2, pool, penaltyMatrix);
-                        if (getGroupViolationScore(g) === 0) newDraft.push(g); else leftovers.push(...g);
+                        if (getGroupViolationScore(g) === 0) pushDraft(g, 3); else leftovers.push(...g);
                     } else {
                         leftovers.push(pool.pop());
                     }
