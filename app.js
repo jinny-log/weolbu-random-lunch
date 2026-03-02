@@ -398,8 +398,13 @@ document.addEventListener('DOMContentLoaded', () => {
             let score = 0;
             // Heavily penalize groups with only 1 team
             if (group.length >= 2 && uniqueTeams === 1) score += 5000;
+
             // Penalize groups with more than 2 members from the same team
-            if (maxCount >= 2 && group.length > 2) score += 2000 * (maxCount - 1);
+            if (maxCount > 2) score += 2000 * (maxCount - 2);
+
+            // Mild penalty if a 3-person group has 2 from the same team
+            if (group.length === 3 && maxCount === 2) score += 500;
+
             return score;
         }
 
@@ -467,7 +472,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             pushDraft(g, 2);
                         } else {
                             // Spread them so they don't stay clustered
-                            g.forEach(e => leftovers.push(e));
+                            leftovers.push(...g);
                         }
                     } else {
                         leftovers.push(pool.pop());
@@ -476,14 +481,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (pool.length === 4) {
                         let g1 = buildDiverseGroup(2, pool, penaltyMatrix);
                         let g2 = buildDiverseGroup(2, pool, penaltyMatrix);
-                        if (getGroupViolationScore(g1) === 0) pushDraft(g1, 3); else g1.forEach(e => leftovers.push(e));
-                        if (getGroupViolationScore(g2) === 0) pushDraft(g2, 3); else g2.forEach(e => leftovers.push(e));
+                        if (getGroupViolationScore(g1) === 0) pushDraft(g1, 3); else leftovers.push(...g1);
+                        if (getGroupViolationScore(g2) === 0) pushDraft(g2, 3); else leftovers.push(...g2);
                     } else if (pool.length >= 3) {
                         let g = buildDiverseGroup(3, pool, penaltyMatrix);
-                        if (getGroupViolationScore(g) === 0) pushDraft(g, 3); else g.forEach(e => leftovers.push(e));
+                        if (getGroupViolationScore(g) === 0) pushDraft(g, 3); else leftovers.push(...g);
                     } else if (pool.length === 2) {
                         let g = buildDiverseGroup(2, pool, penaltyMatrix);
-                        if (getGroupViolationScore(g) === 0) pushDraft(g, 3); else g.forEach(e => leftovers.push(e));
+                        if (getGroupViolationScore(g) === 0) pushDraft(g, 3); else leftovers.push(...g);
                     } else {
                         leftovers.push(pool.pop());
                     }
