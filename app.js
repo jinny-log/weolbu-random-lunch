@@ -223,6 +223,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         let emp = employees.find(e => e.name === name);
         if (name === '지니') {
+            const password = prompt('관리자 접근을 위해 비밀번호를 입력해주세요:');
+            if (password !== 'weolbuhq#1!') {
+                loginBtns.error.textContent = '비밀번호가 틀렸습니다.';
+                return loginBtns.error.classList.remove('hidden');
+            }
             emp = emp || { name: '지니', isParticipating: true };
         } else if (!emp) {
             loginBtns.error.textContent = '등록되지 않은 구성원입니다.';
@@ -374,7 +379,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 let buddy = unassigned[buddyIndex];
                 let theMentee = unassigned[menteeIndex];
                 unassigned = unassigned.filter(e => e.id !== buddy.id && e.id !== theMentee.id);
-                newDraft.push([theMentee, buddy]);
+
+                let g = [theMentee, buddy];
+                g._maxLimit = 2; // Lock buddy pairs strictly to 2 members
+                newDraft.push(g);
             }
         });
 
@@ -631,26 +639,15 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- Admin Tabs & Employee Management ---
-    let isAuthenticatedAdmin = false; // Session-level admin unlock
-
     document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             const targetTab = btn.dataset.tab;
 
-            // Strict block for Management Tabs unless logged in as 지니 and password unlocked
+            // Strict block for Management Tabs unless logged in as 지니
             if (targetTab === 'employee-tab' || targetTab === 'rules-tab') {
                 if (!currentUser || currentUser.name !== '지니') {
                     alert('권한이 없습니다! 오직 관리자(지니) 계정만 관리 탭에 접근할 수 있습니다.');
                     return;
-                }
-
-                if (!isAuthenticatedAdmin) {
-                    const password = prompt('관리자 접근을 위해 비밀번호를 입력해주세요:');
-                    if (password !== 'weolbu1234!') {
-                        alert('비밀번호가 틀렸습니다.');
-                        return; // Block tab switch
-                    }
-                    isAuthenticatedAdmin = true; // Unlock for the rest of the session
                 }
             }
 
