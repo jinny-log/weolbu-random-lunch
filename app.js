@@ -383,10 +383,11 @@ document.addEventListener('DOMContentLoaded', () => {
         // Buddy logic
         const buddyPairs = unassigned.filter(e => e.buddyId);
         buddyPairs.forEach(mentee => {
-            let menteeIndex = unassigned.findIndex(e => e.id === mentee.id);
+            let menteeIndex = unassigned.findIndex(e => e.id == mentee.id);
             if (menteeIndex === -1) return; // already paired
 
-            let buddyIndex = unassigned.findIndex(e => e.id === mentee.buddyId);
+            // Use loose inequality in case buddyId is stored as string
+            let buddyIndex = unassigned.findIndex(e => e.id == mentee.buddyId);
             if (buddyIndex !== -1) {
                 let buddy = unassigned[buddyIndex];
                 let theMentee = unassigned[menteeIndex];
@@ -408,15 +409,9 @@ document.addEventListener('DOMContentLoaded', () => {
             let uniqueTeams = valArr.length;
 
             let score = 0;
-            // Heavily penalize groups with only 1 team
             if (group.length >= 2 && uniqueTeams === 1) score += 5000;
-
-            // Penalize groups with more than 2 members from the same team
             if (maxCount > 2) score += 2000 * (maxCount - 2);
-
-            // Mild penalty if a 3-person group has 2 from the same team
             if (group.length === 3 && maxCount === 2) score += 500;
-
             return score;
         }
 
@@ -424,7 +419,6 @@ document.addEventListener('DOMContentLoaded', () => {
             let bestGroup = null;
             let bestScore = Infinity;
 
-            // Filter newDraft if allowedTeams is provided
             let validDrafts = newDraft;
             if (allowedTeams) {
                 validDrafts = newDraft.filter(g => g.every(member => allowedTeams.includes(member.team)));
@@ -440,7 +434,7 @@ document.addEventListener('DOMContentLoaded', () => {
             validDrafts.forEach(g => {
                 if (g.length >= 3) return; // STRICTLY FORBID EXCEEDING ABSOLUTE MAX OF 3
 
-                let isBuddyGroup = g.some(e => e.buddyId && g.some(b => b.id === e.buddyId));
+                let isBuddyGroup = g.some(e => e.buddyId && g.some(b => b.id == e.buddyId));
                 let sizePenalty = g.length * 10;
                 if (isBuddyGroup && g.length >= 2) sizePenalty += 100000;
 
@@ -462,13 +456,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
 
-            // In a restricted bucket, we MUST place them somewhere inside the bucket if a group exists,
-            // even if it triggers a heavy homogeneous penalty (because they can't go anywhere else).
             if (bestGroup && (allowedTeams || bestScore < 15000000)) {
                 bestGroup.push(emp);
             } else {
                 let g = [emp];
-                g._maxLimit = 3; // free groups default to 3
+                g._maxLimit = 3;
                 newDraft.push(g);
             }
         };
@@ -479,41 +471,27 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         function extractValidGroups(pool, maxTeamCount = 2) {
-            let leftovers = [];
-            const targetSize = Math.min(maxTeamCount, 3);
+            let targetSize = 2; // forcefully prefer 2-person
+            let rejected = [];
 
-            while (pool.length > 0) {
-                if (targetSize === 2) {
-                    if (pool.length >= 2) {
-                        let g = buildDiverseGroup(2, pool, penaltyMatrix);
-                        if (getGroupViolationScore(g) === 0) {
-                            pushDraft(g, 2);
-                        } else {
-                            // Spread them so they don't stay clustered
-                            leftovers.push(...g);
-                        }
-                    } else {
-                        leftovers.push(pool.pop());
-                    }
+            // Phase 1: Try to pull perfect 0-penalty groups
+            while (pool.length >= targetSize) {
+                let g = buildDiverseGroup(targetSize, pool, penaltyMatrix);
+                if (getGroupViolationScore(g) === 0) {
+                    pushDraft(g, targetSize);
                 } else {
-                    if (pool.length >= targetSize * 2) {
-                        let g1 = buildDiverseGroup(targetSize, pool, penaltyMatrix);
-                        let g2 = buildDiverseGroup(targetSize, pool, penaltyMatrix);
-                        if (getGroupViolationScore(g1) === 0) pushDraft(g1, targetSize); else leftovers.push(...g1);
-                        if (getGroupViolationScore(g2) === 0) pushDraft(g2, targetSize); else leftovers.push(...g2);
-                    } else if (pool.length >= targetSize) {
-                        let g = buildDiverseGroup(targetSize, pool, penaltyMatrix);
-                        if (getGroupViolationScore(g) === 0) pushDraft(g, targetSize); else leftovers.push(...g);
-                    } else if (pool.length >= 2) {
-                        // Fallback: if we don't have enough for targetSize, try making a group of 2 at least
-                        let g = buildDiverseGroup(2, pool, penaltyMatrix);
-                        if (getGroupViolationScore(g) === 0) pushDraft(g, 2); else leftovers.push(...g);
-                    } else {
-                        leftovers.push(pool.pop());
-                    }
+                    rejected.push(...g);
                 }
             }
-            return leftovers;
+
+            // Phase 2: Combine all imperfects and forcefully pair them up so they aren't abandoned
+            let leftovers = [...pool, ...rejected];
+            while (leftovers.length >= targetSize) {
+                let g = buildDiverseGroup(targetSize, leftovers, penaltyMatrix);
+                pushDraft(g, targetSize); // Ignore violation score, we just need pairs!
+            }
+
+            return leftovers; // Will be 0 or 1 person guaranteed
         }
 
         if (matching.useMarchRule && matching.useMarchRule.checked) {
