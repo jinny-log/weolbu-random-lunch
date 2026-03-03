@@ -420,16 +420,24 @@ document.addEventListener('DOMContentLoaded', () => {
             return score;
         }
 
-        const forceInsert = (emp) => {
+        const forceInsert = (emp, allowedTeams = null) => {
             let bestGroup = null;
             let bestScore = Infinity;
-            if (newDraft.length === 0) {
+
+            // Filter newDraft if allowedTeams is provided
+            let validDrafts = newDraft;
+            if (allowedTeams) {
+                validDrafts = newDraft.filter(g => g.every(member => allowedTeams.includes(member.team)));
+            }
+
+            if (validDrafts.length === 0) {
                 let g = [emp];
                 g._maxLimit = 3;
                 newDraft.push(g);
                 return;
             }
-            newDraft.forEach(g => {
+
+            validDrafts.forEach(g => {
                 let currentMaxLimit = g._maxLimit || 3;
                 if (g.length >= currentMaxLimit) return; // STRICTLY FORBID EXCEEDING BUCKET MAX
 
@@ -490,17 +498,18 @@ document.addEventListener('DOMContentLoaded', () => {
                         leftovers.push(pool.pop());
                     }
                 } else {
-                    if (pool.length === 4) {
-                        let g1 = buildDiverseGroup(2, pool, penaltyMatrix);
-                        let g2 = buildDiverseGroup(2, pool, penaltyMatrix);
-                        if (getGroupViolationScore(g1) === 0) pushDraft(g1, 3); else leftovers.push(...g1);
-                        if (getGroupViolationScore(g2) === 0) pushDraft(g2, 3); else leftovers.push(...g2);
-                    } else if (pool.length >= 3) {
-                        let g = buildDiverseGroup(3, pool, penaltyMatrix);
-                        if (getGroupViolationScore(g) === 0) pushDraft(g, 3); else leftovers.push(...g);
-                    } else if (pool.length === 2) {
+                    if (pool.length >= targetSize * 2) {
+                        let g1 = buildDiverseGroup(targetSize, pool, penaltyMatrix);
+                        let g2 = buildDiverseGroup(targetSize, pool, penaltyMatrix);
+                        if (getGroupViolationScore(g1) === 0) pushDraft(g1, targetSize); else leftovers.push(...g1);
+                        if (getGroupViolationScore(g2) === 0) pushDraft(g2, targetSize); else leftovers.push(...g2);
+                    } else if (pool.length >= targetSize) {
+                        let g = buildDiverseGroup(targetSize, pool, penaltyMatrix);
+                        if (getGroupViolationScore(g) === 0) pushDraft(g, targetSize); else leftovers.push(...g);
+                    } else if (pool.length >= 2) {
+                        // Fallback: if we don't have enough for targetSize, try making a group of 2 at least
                         let g = buildDiverseGroup(2, pool, penaltyMatrix);
-                        if (getGroupViolationScore(g) === 0) pushDraft(g, 3); else leftovers.push(...g);
+                        if (getGroupViolationScore(g) === 0) pushDraft(g, 2); else leftovers.push(...g);
                     } else {
                         leftovers.push(pool.pop());
                     }
@@ -511,21 +520,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (matching.useMarchRule && matching.useMarchRule.checked) {
             let remainingEmps = [...unassigned];
-            let globalLeftovers = [];
 
             customRules.forEach(bucketTeams => {
                 let teamsArray = Array.isArray(bucketTeams) ? bucketTeams : bucketTeams.split(',').map(t => t.trim());
                 let bucketEmps = remainingEmps.filter(e => teamsArray.includes(e.team));
                 remainingEmps = remainingEmps.filter(e => !teamsArray.includes(e.team));
 
-                let maxTeamCount = teamsArray.length;
-                let rejects = extractValidGroups(bucketEmps, maxTeamCount);
-                globalLeftovers.push(...rejects);
+                // Always try to form 2-person groups from the bucket
+                let rejects = extractValidGroups(bucketEmps, 2);
+
+                // Any odd leftovers MUST stay within their bucket's groups
+                rejects.forEach(emp => forceInsert(emp, teamsArray));
             });
 
-            remainingEmps.push(...globalLeftovers);
-            let absoluteRejects = extractValidGroups(remainingEmps, 2); // Defaults back to 2
-
+            // For everyone else who doesn't belong to any custom rule bucket
+            let absoluteRejects = extractValidGroups(remainingEmps, 2);
             absoluteRejects.forEach(emp => forceInsert(emp));
 
         } else {
