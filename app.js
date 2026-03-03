@@ -404,9 +404,11 @@ document.addEventListener('DOMContentLoaded', () => {
         function buildDiverseGroup(size, pool, penaltyMatrix, isBucket = false) {
             let group = [pool.shift()];
             while (group.length < size && pool.length > 0) {
+                let existingTeams = group.map(e => e.team);
                 let candidates = [...pool];
                 candidates.forEach(cand => {
                     let score = 0;
+                    if (existingTeams.includes(cand.team)) score += 100;
 
                     // Temporarily add candidate to calculate exact violation score
                     group.push(cand);
