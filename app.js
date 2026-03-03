@@ -438,8 +438,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             validDrafts.forEach(g => {
-                let currentMaxLimit = g._maxLimit || 3;
-                if (g.length >= currentMaxLimit) return; // STRICTLY FORBID EXCEEDING BUCKET MAX
+                if (g.length >= 3) return; // STRICTLY FORBID EXCEEDING ABSOLUTE MAX OF 3
 
                 let isBuddyGroup = g.some(e => e.buddyId && g.some(b => b.id === e.buddyId));
                 let sizePenalty = g.length * 10;
@@ -463,10 +462,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
 
-            // If the BEST score we found involves a massive violation (e.g., forcing a 1-team group)
-            // It's better to just start a new group for this person if possible.
-            // 5000 * 3000 = 15,000,000. So anything >= 15M means we are forcing a homogeneous group.
-            if (bestGroup && bestScore < 15000000) {
+            // In a restricted bucket, we MUST place them somewhere inside the bucket if a group exists,
+            // even if it triggers a heavy homogeneous penalty (because they can't go anywhere else).
+            if (bestGroup && (allowedTeams || bestScore < 15000000)) {
                 bestGroup.push(emp);
             } else {
                 let g = [emp];
