@@ -210,7 +210,7 @@ document.addEventListener('DOMContentLoaded', () => {
             groups = snapshot.val() || [];
             if (currentUser) {
                 if (currentUser.name === '지니') {
-                    renderGroups(groups, matching.weekLabel.textContent, false);
+                    renderGroups(groups, matching.weekLabel.textContent, true);
                 } else {
                     showDashboard(); // Re-evaluates what to show
                 }
