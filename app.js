@@ -760,7 +760,7 @@ document.addEventListener('DOMContentLoaded', () => {
         empManager.name.value = emp.name;
         empManager.team.value = emp.team;
         empManager.newHire.checked = emp.isNewHire;
-        empManager.buddySelect.value = emp.buddyId || '';
+        empManager.buddySelect.value = emp.buddyId ? String(emp.buddyId) : '';
 
         editingEmpId = emp.id;
         empManager.addBtn.textContent = '정보 수정';
@@ -774,16 +774,19 @@ document.addEventListener('DOMContentLoaded', () => {
         const isNewHire = empManager.newHire.checked;
         const buddyId = empManager.buddySelect.value ? parseInt(empManager.buddySelect.value) : null;
 
+        console.log(`[SAVE] name=${name}, editingEmpId=${editingEmpId}, buddyId=${buddyId}, type=${typeof buddyId}`);
+
         if (name) {
             if (editingEmpId) {
-                if (employees.some(emp => emp.name === name && emp.id !== editingEmpId)) return alert('이미 존재하는 이름입니다.');
-                let emp = employees.find(e => e.id === editingEmpId);
+                if (employees.some(emp => emp.name === name && emp.id != editingEmpId)) return alert('이미 존재하는 이름입니다.');
+                let emp = employees.find(e => e.id == editingEmpId);
+                console.log(`[SAVE] Found editing emp:`, emp);
                 if (emp) {
                     // 1. If changing buddy, clear the OLD buddy's reference to this employee
-                    if (emp.buddyId !== buddyId) {
+                    if (emp.buddyId != buddyId) {
                         if (emp.buddyId) {
-                            let oldBuddy = employees.find(e => e.id === emp.buddyId);
-                            if (oldBuddy && oldBuddy.buddyId === emp.id) oldBuddy.buddyId = null;
+                            let oldBuddy = employees.find(e => e.id == emp.buddyId);
+                            if (oldBuddy && oldBuddy.buddyId == emp.id) oldBuddy.buddyId = null;
                         }
                     }
 
@@ -794,11 +797,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     // 2. Set the NEW buddy's reference to point back to us
                     if (buddyId) {
-                        let newBuddy = employees.find(e => e.id === buddyId);
+                        let newBuddy = employees.find(e => e.id == buddyId);
                         if (newBuddy) {
                             // If new buddy had someone else, clear that someone else
-                            if (newBuddy.buddyId && newBuddy.buddyId !== emp.id) {
-                                let theirOldBuddy = employees.find(e => e.id === newBuddy.buddyId);
+                            if (newBuddy.buddyId && newBuddy.buddyId != emp.id) {
+                                let theirOldBuddy = employees.find(e => e.id == newBuddy.buddyId);
                                 if (theirOldBuddy) theirOldBuddy.buddyId = null;
                             }
                             newBuddy.buddyId = emp.id;
@@ -815,10 +818,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 // Set bidirectional link for new employee
                 if (buddyId) {
-                    let newBuddy = employees.find(e => e.id === buddyId);
+                    let newBuddy = employees.find(e => e.id == buddyId);
                     if (newBuddy) {
                         if (newBuddy.buddyId) {
-                            let theirOldBuddy = employees.find(e => e.id === newBuddy.buddyId);
+                            let theirOldBuddy = employees.find(e => e.id == newBuddy.buddyId);
                             if (theirOldBuddy) theirOldBuddy.buddyId = null;
                         }
                         newBuddy.buddyId = newEmp.id;
