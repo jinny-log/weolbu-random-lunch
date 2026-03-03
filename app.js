@@ -451,7 +451,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return score;
         }
 
-        const forceInsert = (emp, allowedTeams = null) => {
+        const forceInsert = (emp, allowedTeams = null, desperationMode = false) => {
             let bestGroup = null;
             let bestScore = Infinity;
 
@@ -499,9 +499,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
 
-            // If bestScore is completely outrageous (>= 100,000,000), it hit the 3+ homogenous penalty.
-            // In that case, ABORT pushing to bestGroup and force a new group.
-            if (bestGroup && bestScore < 100000000 && (allowedTeams || bestScore < 15000000)) {
+            // 5000 penalty = 15,000,000 total (2-person homogenous)
+            // 100000 penalty = 300,000,000 total (3-person homogenous)
+            let maxAllowed = 14000000; // Strict mode: NO homogenous pairs allowed at all
+            if (desperationMode) {
+                maxAllowed = 16000000; // Desperation: ALLOW 2-person homogenous, but STILL reject 3-person homogenous!
+            } else if (isHomogenousBucket) {
+                maxAllowed = Infinity; // Pure homogenous buckets can do whatever they want
+            }
+
+            if (bestGroup && bestScore < maxAllowed) {
                 bestGroup.push(emp);
             } else {
                 let g = [emp];
@@ -586,12 +593,32 @@ document.addEventListener('DOMContentLoaded', () => {
             absoluteRejects.forEach(emp => forceInsert(emp));
         }
 
+        // --- GLOBAL CLEANUP SWEEPS ---
+        // Sweep 1: Find any remaining 1-person groups (stranded because homogeneous pairs were rejected).
+        // Release them from bucket constraints and forcefully assign them anywhere globally.
+        let strandedGroups = newDraft.filter(g => g.length === 1);
+        newDraft = newDraft.filter(g => g.length > 1);
+
+        let strandedEmps = strandedGroups.map(g => g[0]);
+        strandedEmps.forEach(emp => {
+            forceInsert(emp, null, false); // No bucket constraint, strict mode
+        });
+
+        // Sweep 2 (Desperation): If we STILL have 1-person groups (e.g. only 1 team left globally, and all other groups are full)
+        // We MUST allow them to form 2-person homogenous groups so nobody eats alone.
+        let superStrandedGroups = newDraft.filter(g => g.length === 1);
+        newDraft = newDraft.filter(g => g.length > 1);
+
+        let superStrandedEmps = superStrandedGroups.map(g => g[0]);
+        superStrandedEmps.forEach(emp => {
+            forceInsert(emp, null, true); // No bucket constraint, desperation mode = true
+        });
+
         // Clean up the custom _maxLimit property from arrays before saving to Firebase!
         // Otherwise Firebase converts the Array into a plain JSON Object and breaks the UI!
         newDraft.forEach(g => { if (g._maxLimit !== undefined) delete g._maxLimit; });
         saveDraft(newDraft); // Syncs Draft to Firebase immediately
     }
-
     // --- Rendering & Drag-and-Drop ---
     let draggedMember = null;
     let sourceGroupIndex = null;
