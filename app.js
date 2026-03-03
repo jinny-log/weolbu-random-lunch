@@ -224,7 +224,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let emp = employees.find(e => e.name === name);
         if (name === '지니') {
             const password = prompt('관리자 접근을 위해 비밀번호를 입력해주세요:');
-            if (password !== 'weolbuhq#1!') {
+            if (!password || password.trim() !== 'weolbuhq#1!') {
                 loginBtns.error.textContent = '비밀번호가 틀렸습니다.';
                 return loginBtns.error.classList.remove('hidden');
             }
