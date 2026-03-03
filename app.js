@@ -401,6 +401,33 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const penaltyMatrix = buildPenaltyMatrix();
 
+        function buildDiverseGroup(size, pool, penaltyMatrix, isBucket = false) {
+            let group = [pool.shift()];
+            while (group.length < size && pool.length > 0) {
+                let candidates = [...pool];
+                candidates.forEach(cand => {
+                    let score = 0;
+
+                    // Temporarily add candidate to calculate exact violation score
+                    group.push(cand);
+                    score += getGroupViolationScore(group, isBucket) * 3000;
+                    group.pop();
+
+                    group.forEach(existingMember => {
+                        if (penaltyMatrix[cand.id] && penaltyMatrix[cand.id][existingMember.id]) {
+                            score += penaltyMatrix[cand.id][existingMember.id] * 10;
+                        }
+                    });
+                    cand._tempScore = score;
+                });
+                candidates.sort((a, b) => a._tempScore - b._tempScore);
+                let bestCandidate = candidates[0];
+                let poolIndex = pool.findIndex(e => e.id === bestCandidate.id);
+                group.push(pool.splice(poolIndex, 1)[0]);
+            }
+            return group;
+        }
+
         function getGroupViolationScore(group, isBucket = false) {
             let counts = {};
             group.forEach(e => counts[e.team] = (counts[e.team] || 0) + 1);
@@ -552,33 +579,6 @@ document.addEventListener('DOMContentLoaded', () => {
         // Otherwise Firebase converts the Array into a plain JSON Object and breaks the UI!
         newDraft.forEach(g => { if (g._maxLimit !== undefined) delete g._maxLimit; });
         saveDraft(newDraft); // Syncs Draft to Firebase immediately
-    }
-
-    function buildDiverseGroup(size, pool, penaltyMatrix, isBucket = false) {
-        let group = [pool.shift()];
-        while (group.length < size && pool.length > 0) {
-            let candidates = [...pool];
-            candidates.forEach(cand => {
-                let score = 0;
-
-                // Temporarily add candidate to calculate exact violation score
-                group.push(cand);
-                score += getGroupViolationScore(group, isBucket) * 3000;
-                group.pop();
-
-                group.forEach(existingMember => {
-                    if (penaltyMatrix[cand.id] && penaltyMatrix[cand.id][existingMember.id]) {
-                        score += penaltyMatrix[cand.id][existingMember.id] * 10;
-                    }
-                });
-                cand._tempScore = score;
-            });
-            candidates.sort((a, b) => a._tempScore - b._tempScore);
-            let bestCandidate = candidates[0];
-            let poolIndex = pool.findIndex(e => e.id === bestCandidate.id);
-            group.push(pool.splice(poolIndex, 1)[0]);
-        }
-        return group;
     }
 
     // --- Rendering & Drag-and-Drop ---
