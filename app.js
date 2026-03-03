@@ -497,37 +497,32 @@ document.addEventListener('DOMContentLoaded', () => {
         if (matching.useMarchRule && matching.useMarchRule.checked) {
             let remainingEmps = [...unassigned];
 
-            // Get all unique active teams
-            let allKnownTeams = [...new Set(employees.filter(e => e.isParticipating).map(e => e.team))];
-
             customRules.forEach(bucketTeams => {
-                let teamsArray = [];
-                if (Array.isArray(bucketTeams)) {
-                    teamsArray = bucketTeams;
-                } else {
-                    // Smart parsing: Find any known team names that exist in the raw string, 
-                    // even if the user didn't use commas (e.g. "오리지널팀 커뮤니티 스쿼드")
-                    allKnownTeams.forEach(t => {
-                        if (bucketTeams.includes(t)) teamsArray.push(t);
-                    });
-                    // Fallback to comma split if for some reason nothing matched
-                    if (teamsArray.length === 0) {
-                        teamsArray = bucketTeams.split(',').map(t => t.trim()).filter(Boolean);
-                    }
-                }
+                let rawTeams = Array.isArray(bucketTeams) ? bucketTeams : bucketTeams.split(',');
+                let normalizedTargetTeams = rawTeams.map(t => t.replace(/\s+/g, '').toLowerCase()).filter(Boolean);
 
-                let bucketEmps = remainingEmps.filter(e => teamsArray.includes(e.team));
-                remainingEmps = remainingEmps.filter(e => !teamsArray.includes(e.team));
+                // Find matching employees by comparing normalized names
+                let bucketEmps = remainingEmps.filter(e => {
+                    let normalizedTeam = e.team.replace(/\s+/g, '').toLowerCase();
+                    return normalizedTargetTeams.includes(normalizedTeam);
+                });
+
+                // Gather the ACTUAL team names that got matched, so forceInsert knows exactly what to look for
+                let actualMatchedTeams = [...new Set(bucketEmps.map(e => e.team))];
+
+                remainingEmps = remainingEmps.filter(e => {
+                    let normalizedTeam = e.team.replace(/\s+/g, '').toLowerCase();
+                    return !normalizedTargetTeams.includes(normalizedTeam);
+                });
 
                 // Always try to form 2-person groups from the bucket
                 // IMPORTANT: If the bucket only has ONE team type (e.g. just "프롭테크팀"), 
                 // getGroupViolationScore will normally reject it (homogenous penalty).
-                // Phase 2 forceful matching will catch it, BUT to prevent issues, 
-                // we allow homogenous pairs to not throw max penalty inside buckets.
-                let rejects = extractValidGroups(bucketEmps, 2);
+                // We allow homogenous pairs to not throw max penalty inside buckets via 'isBucket=true'.
+                let rejects = extractValidGroups(bucketEmps, 2, true);
 
                 // Any odd leftovers MUST stay within their bucket's groups
-                rejects.forEach(emp => forceInsert(emp, teamsArray));
+                rejects.forEach(emp => forceInsert(emp, actualMatchedTeams.length > 0 ? actualMatchedTeams : rawTeams));
             });
 
             // For everyone else who doesn't belong to any custom rule bucket
