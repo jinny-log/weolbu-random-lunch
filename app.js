@@ -534,6 +534,9 @@ document.addEventListener('DOMContentLoaded', () => {
             absoluteRejects.forEach(emp => forceInsert(emp));
         }
 
+        // Clean up the custom _maxLimit property from arrays before saving to Firebase!
+        // Otherwise Firebase converts the Array into a plain JSON Object and breaks the UI!
+        newDraft.forEach(g => { if (g._maxLimit !== undefined) delete g._maxLimit; });
         saveDraft(newDraft); // Syncs Draft to Firebase immediately
     }
 
@@ -584,8 +587,12 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        groupsToRender.forEach((group, groupIdx) => {
-            if (!group) return; // safety
+        groupsToRender.forEach((rawGroup, groupIdx) => {
+            if (!rawGroup) return; // safety
+            // Firebase object-to-array fallback
+            let group = Array.isArray(rawGroup) ? rawGroup : Object.values(rawGroup).filter(e => e && e.id);
+            if (group.length === 0) return;
+
             const isMyGroup = currentUser && group.some(e => e.name === currentUser.name);
             const card = document.createElement('div');
             card.className = `group-card ${isMyGroup ? 'my-group' : ''}`;
