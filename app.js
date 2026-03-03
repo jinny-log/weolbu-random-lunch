@@ -529,14 +529,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
-            // Phase 2: Combine all imperfects and forcefully pair them up so they aren't abandoned
+            // Phase 2: Combine all imperfects and forcefully pair them up ONLY if they are diverse
             let leftovers = [...pool, ...rejected];
+            let finalLeftovers = [];
             while (leftovers.length >= targetSize) {
                 let g = buildDiverseGroup(targetSize, leftovers, penaltyMatrix, isBucket);
-                pushDraft(g, targetSize); // Ignore violation score, we just need pairs!
+                if (new Set(g.map(e => e.team)).size > 1) {
+                    pushDraft(g, targetSize);
+                } else {
+                    finalLeftovers.push(g[0]);
+                    leftovers.unshift(g[1]); // Put the second back to evaluate with remaining candidates
+                }
             }
+            finalLeftovers.push(...leftovers);
 
-            return leftovers; // Will be 0 or 1 person guaranteed
+            return finalLeftovers;
         }
 
         if (matching.useMarchRule && matching.useMarchRule.checked) {
