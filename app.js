@@ -438,8 +438,8 @@ document.addEventListener('DOMContentLoaded', () => {
             let uniqueTeams = valArr.length;
 
             let score = 0;
-            if (!isBucket && group.length >= 2 && uniqueTeams === 1) score += 5000;
-            if (!isBucket && maxCount === 2 && group.length > 2) score += 500;
+            if (group.length >= 2 && uniqueTeams === 1) score += 5000;
+            if (maxCount === 2 && group.length > 2) score += 500;
 
             // STRICTLY FORBID 3+ members from the SAME TEAM in the same group, even in buckets
             if (maxCount >= 3) {
