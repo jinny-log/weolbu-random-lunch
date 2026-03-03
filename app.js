@@ -401,7 +401,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const penaltyMatrix = buildPenaltyMatrix();
 
-        function getGroupViolationScore(group) {
+        function getGroupViolationScore(group, isBucket = false) {
             let counts = {};
             group.forEach(e => counts[e.team] = (counts[e.team] || 0) + 1);
             let valArr = Object.values(counts);
@@ -409,9 +409,9 @@ document.addEventListener('DOMContentLoaded', () => {
             let uniqueTeams = valArr.length;
 
             let score = 0;
-            if (group.length >= 2 && uniqueTeams === 1) score += 5000;
-            if (maxCount > 2) score += 2000 * (maxCount - 2);
-            if (group.length === 3 && maxCount === 2) score += 500;
+            if (!isBucket && group.length >= 2 && uniqueTeams === 1) score += 5000;
+            if (!isBucket && maxCount > 2) score += 2000 * (maxCount - 2);
+            if (!isBucket && group.length === 3 && maxCount === 2) score += 500;
             return score;
         }
 
@@ -439,7 +439,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (isBuddyGroup && g.length >= 2) sizePenalty += 100000;
 
                 g.push(emp);
-                let violation = getGroupViolationScore(g);
+                let violation = getGroupViolationScore(g, !!allowedTeams);
                 g.pop();
 
                 let penalty = 0;
@@ -470,14 +470,14 @@ document.addEventListener('DOMContentLoaded', () => {
             newDraft.push(group);
         };
 
-        function extractValidGroups(pool, maxTeamCount = 2) {
+        function extractValidGroups(pool, maxTeamCount = 2, isBucket = false) {
             let targetSize = 2; // forcefully prefer 2-person
             let rejected = [];
 
             // Phase 1: Try to pull perfect 0-penalty groups
             while (pool.length >= targetSize) {
                 let g = buildDiverseGroup(targetSize, pool, penaltyMatrix);
-                if (getGroupViolationScore(g) === 0) {
+                if (getGroupViolationScore(g, isBucket) === 0) {
                     pushDraft(g, targetSize);
                 } else {
                     rejected.push(...g);
@@ -497,12 +497,33 @@ document.addEventListener('DOMContentLoaded', () => {
         if (matching.useMarchRule && matching.useMarchRule.checked) {
             let remainingEmps = [...unassigned];
 
+            // Get all unique active teams
+            let allKnownTeams = [...new Set(employees.filter(e => e.isParticipating).map(e => e.team))];
+
             customRules.forEach(bucketTeams => {
-                let teamsArray = Array.isArray(bucketTeams) ? bucketTeams : bucketTeams.split(',').map(t => t.trim());
+                let teamsArray = [];
+                if (Array.isArray(bucketTeams)) {
+                    teamsArray = bucketTeams;
+                } else {
+                    // Smart parsing: Find any known team names that exist in the raw string, 
+                    // even if the user didn't use commas (e.g. "오리지널팀 커뮤니티 스쿼드")
+                    allKnownTeams.forEach(t => {
+                        if (bucketTeams.includes(t)) teamsArray.push(t);
+                    });
+                    // Fallback to comma split if for some reason nothing matched
+                    if (teamsArray.length === 0) {
+                        teamsArray = bucketTeams.split(',').map(t => t.trim()).filter(Boolean);
+                    }
+                }
+
                 let bucketEmps = remainingEmps.filter(e => teamsArray.includes(e.team));
                 remainingEmps = remainingEmps.filter(e => !teamsArray.includes(e.team));
 
                 // Always try to form 2-person groups from the bucket
+                // IMPORTANT: If the bucket only has ONE team type (e.g. just "프롭테크팀"), 
+                // getGroupViolationScore will normally reject it (homogenous penalty).
+                // Phase 2 forceful matching will catch it, BUT to prevent issues, 
+                // we allow homogenous pairs to not throw max penalty inside buckets.
                 let rejects = extractValidGroups(bucketEmps, 2);
 
                 // Any odd leftovers MUST stay within their bucket's groups
@@ -772,21 +793,21 @@ document.addEventListener('DOMContentLoaded', () => {
         const name = empManager.name.value.trim();
         const team = empManager.team.value.trim() || '소속 미지정';
         const isNewHire = empManager.newHire.checked;
-        const buddyId = empManager.buddySelect.value ? parseInt(empManager.buddySelect.value) : null;
+        const buddyId = empManager.buddySelect.value || null;
 
         console.log(`[SAVE] name=${name}, editingEmpId=${editingEmpId}, buddyId=${buddyId}, type=${typeof buddyId}`);
 
         if (name) {
             if (editingEmpId) {
-                if (employees.some(emp => emp.name === name && emp.id != editingEmpId)) return alert('이미 존재하는 이름입니다.');
-                let emp = employees.find(e => e.id == editingEmpId);
+                if (employees.some(emp => emp.name === name && String(emp.id) !== String(editingEmpId))) return alert('이미 존재하는 이름입니다.');
+                let emp = employees.find(e => String(e.id) === String(editingEmpId));
                 console.log(`[SAVE] Found editing emp:`, emp);
                 if (emp) {
                     // 1. If changing buddy, clear the OLD buddy's reference to this employee
-                    if (emp.buddyId != buddyId) {
+                    if (String(emp.buddyId) !== String(buddyId)) {
                         if (emp.buddyId) {
-                            let oldBuddy = employees.find(e => e.id == emp.buddyId);
-                            if (oldBuddy && oldBuddy.buddyId == emp.id) oldBuddy.buddyId = null;
+                            let oldBuddy = employees.find(e => String(e.id) == String(emp.buddyId));
+                            if (oldBuddy && String(oldBuddy.buddyId) == String(emp.id)) oldBuddy.buddyId = null;
                         }
                     }
 
@@ -797,11 +818,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     // 2. Set the NEW buddy's reference to point back to us
                     if (buddyId) {
-                        let newBuddy = employees.find(e => e.id == buddyId);
+                        let newBuddy = employees.find(e => String(e.id) == String(buddyId));
                         if (newBuddy) {
                             // If new buddy had someone else, clear that someone else
-                            if (newBuddy.buddyId && newBuddy.buddyId != emp.id) {
-                                let theirOldBuddy = employees.find(e => e.id == newBuddy.buddyId);
+                            if (newBuddy.buddyId && String(newBuddy.buddyId) != String(emp.id)) {
+                                let theirOldBuddy = employees.find(e => String(e.id) == String(newBuddy.buddyId));
                                 if (theirOldBuddy) theirOldBuddy.buddyId = null;
                             }
                             newBuddy.buddyId = emp.id;
@@ -813,15 +834,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 empManager.addBtn.style.background = '#2563EB';
             } else {
                 if (employees.some(emp => emp.name === name)) return alert('이미 존재하는 구성원입니다.');
-                let newEmp = { id: Date.now(), name, team, isParticipating: true, isNewHire, buddyId };
+                let newEmp = { id: String(Date.now()), name, team, isParticipating: true, isNewHire, buddyId };
                 employees.push(newEmp);
 
                 // Set bidirectional link for new employee
                 if (buddyId) {
-                    let newBuddy = employees.find(e => e.id == buddyId);
+                    let newBuddy = employees.find(e => String(e.id) === String(buddyId));
                     if (newBuddy) {
                         if (newBuddy.buddyId) {
-                            let theirOldBuddy = employees.find(e => e.id == newBuddy.buddyId);
+                            let theirOldBuddy = employees.find(e => String(e.id) === String(newBuddy.buddyId));
                             if (theirOldBuddy) theirOldBuddy.buddyId = null;
                         }
                         newBuddy.buddyId = newEmp.id;
