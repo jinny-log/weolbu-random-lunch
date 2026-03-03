@@ -682,6 +682,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function renderBuddyOptions() {
         if (!employees) return;
+        const currentValue = empManager.buddySelect.value;
         empManager.buddySelect.innerHTML = '<option value="">-- 버디 선택 (선택사항) --</option>';
         employees.forEach(emp => {
             const opt = document.createElement('option');
@@ -689,6 +690,7 @@ document.addEventListener('DOMContentLoaded', () => {
             opt.textContent = `${emp.name} (${emp.team})`;
             empManager.buddySelect.appendChild(opt);
         });
+        empManager.buddySelect.value = currentValue;
     }
 
     function renderEmployeeList() {
@@ -777,17 +779,51 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (employees.some(emp => emp.name === name && emp.id !== editingEmpId)) return alert('이미 존재하는 이름입니다.');
                 let emp = employees.find(e => e.id === editingEmpId);
                 if (emp) {
+                    // 1. If changing buddy, clear the OLD buddy's reference to this employee
+                    if (emp.buddyId !== buddyId) {
+                        if (emp.buddyId) {
+                            let oldBuddy = employees.find(e => e.id === emp.buddyId);
+                            if (oldBuddy && oldBuddy.buddyId === emp.id) oldBuddy.buddyId = null;
+                        }
+                    }
+
                     emp.name = name;
                     emp.team = team;
                     emp.isNewHire = isNewHire;
                     emp.buddyId = buddyId;
+
+                    // 2. Set the NEW buddy's reference to point back to us
+                    if (buddyId) {
+                        let newBuddy = employees.find(e => e.id === buddyId);
+                        if (newBuddy) {
+                            // If new buddy had someone else, clear that someone else
+                            if (newBuddy.buddyId && newBuddy.buddyId !== emp.id) {
+                                let theirOldBuddy = employees.find(e => e.id === newBuddy.buddyId);
+                                if (theirOldBuddy) theirOldBuddy.buddyId = null;
+                            }
+                            newBuddy.buddyId = emp.id;
+                        }
+                    }
                 }
                 editingEmpId = null;
                 empManager.addBtn.textContent = '단건 추가';
                 empManager.addBtn.style.background = '#2563EB';
             } else {
                 if (employees.some(emp => emp.name === name)) return alert('이미 존재하는 구성원입니다.');
-                employees.push({ id: Date.now(), name, team, isParticipating: true, isNewHire, buddyId });
+                let newEmp = { id: Date.now(), name, team, isParticipating: true, isNewHire, buddyId };
+                employees.push(newEmp);
+
+                // Set bidirectional link for new employee
+                if (buddyId) {
+                    let newBuddy = employees.find(e => e.id === buddyId);
+                    if (newBuddy) {
+                        if (newBuddy.buddyId) {
+                            let theirOldBuddy = employees.find(e => e.id === newBuddy.buddyId);
+                            if (theirOldBuddy) theirOldBuddy.buddyId = null;
+                        }
+                        newBuddy.buddyId = newEmp.id;
+                    }
+                }
             }
 
             saveEmployees();
