@@ -451,7 +451,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return score;
         }
 
-        const forceInsert = (emp, allowedTeams = null, desperationMode = false) => {
+        const forceInsert = (emp, allowedTeams = null, desperationMode = false, maxGroupSize = 3) => {
             let bestGroup = null;
             let bestScore = Infinity;
 
@@ -462,7 +462,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (validDrafts.length === 0) {
                 let g = [emp];
-                g._maxLimit = 3;
+                g._maxLimit = maxGroupSize;
                 newDraft.push(g);
                 return;
             }
@@ -471,7 +471,7 @@ document.addEventListener('DOMContentLoaded', () => {
             let isHomogenousBucket = allowedTeams && new Set(allowedTeams).size === 1;
 
             validDrafts.forEach(g => {
-                if (g.length >= 3) return; // STRICTLY FORBID EXCEEDING ABSOLUTE MAX OF 3
+                if (g.length >= maxGroupSize) return; // STRICTLY FORBID EXCEEDING DYNAMIC MAX
 
                 let isBuddyGroup = g.some(e => e.buddyId && g.some(b => b.id == e.buddyId));
                 let sizePenalty = g.length * 10;
@@ -601,7 +601,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         let strandedEmps = strandedGroups.map(g => g[0]);
         strandedEmps.forEach(emp => {
-            forceInsert(emp, null, false); // No bucket constraint, strict mode
+            forceInsert(emp, null, false, 4); // No bucket constraint, strict mode, allow up to 4 members
         });
 
         // Sweep 2 (Desperation): If we STILL have 1-person groups (e.g. only 1 team left globally, and all other groups are full)
@@ -611,7 +611,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         let superStrandedEmps = superStrandedGroups.map(g => g[0]);
         superStrandedEmps.forEach(emp => {
-            forceInsert(emp, null, true); // No bucket constraint, desperation mode = true
+            forceInsert(emp, null, true, 4); // No bucket constraint, desperation mode, allow up to 4 members
         });
 
         // Clean up the custom _maxLimit property from arrays before saving to Firebase!
