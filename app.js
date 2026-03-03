@@ -497,7 +497,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
 
-            if (bestGroup && (allowedTeams || bestScore < 15000000)) {
+            // If bestScore is completely outrageous (>= 100,000,000), it hit the 3+ homogenous penalty.
+            // In that case, ABORT pushing to bestGroup and force a new group.
+            if (bestGroup && bestScore < 100000000 && (allowedTeams || bestScore < 15000000)) {
                 bestGroup.push(emp);
             } else {
                 let g = [emp];
