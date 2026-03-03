@@ -120,7 +120,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (matching.addEmptyGroupBtn) {
         matching.addEmptyGroupBtn.addEventListener('click', () => {
             groups.push([]);
-            saveDraft(groups);
             renderGroups(groups, matching.weekLabel.textContent, true);
         });
     }
@@ -473,7 +472,7 @@ document.addEventListener('DOMContentLoaded', () => {
             newDraft.push(group);
         };
 
-        function extractValidGroups(pool, maxTeamCount = 3) {
+        function extractValidGroups(pool, maxTeamCount = 2) {
             let leftovers = [];
             const targetSize = Math.min(maxTeamCount, 3);
 
@@ -525,7 +524,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             remainingEmps.push(...globalLeftovers);
-            let absoluteRejects = extractValidGroups(remainingEmps, 3); // Defaults back to 3
+            let absoluteRejects = extractValidGroups(remainingEmps, 2); // Defaults back to 2
 
             absoluteRejects.forEach(emp => forceInsert(emp));
 
@@ -591,7 +590,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!rawGroup) return; // safety
             // Firebase object-to-array fallback
             let group = Array.isArray(rawGroup) ? rawGroup : Object.values(rawGroup).filter(e => e && e.id);
-            if (group.length === 0) return;
 
             const isMyGroup = currentUser && group.some(e => e.name === currentUser.name);
             const card = document.createElement('div');
