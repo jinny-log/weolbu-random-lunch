@@ -410,8 +410,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
             let score = 0;
             if (!isBucket && group.length >= 2 && uniqueTeams === 1) score += 5000;
-            if (!isBucket && maxCount > 2) score += 2000 * (maxCount - 2);
-            if (!isBucket && group.length === 3 && maxCount === 2) score += 500;
+            if (!isBucket && maxCount === 2 && group.length > 2) score += 500;
+
+            // STRICTLY FORBID 3+ members from the SAME TEAM in the same group, even in buckets
+            if (maxCount >= 3) {
+                // If it's a bucket and the bucket ONLY has ONE team type, we HAVE to allow it.
+                // Otherwise, penalize heavily.
+                score += 100000;
+            }
+
             return score;
         }
 
@@ -431,6 +438,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
+            // Check if context allows only one team
+            let isHomogenousBucket = allowedTeams && new Set(allowedTeams).size === 1;
+
             validDrafts.forEach(g => {
                 if (g.length >= 3) return; // STRICTLY FORBID EXCEEDING ABSOLUTE MAX OF 3
 
@@ -440,6 +450,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 g.push(emp);
                 let violation = getGroupViolationScore(g, !!allowedTeams);
+                // Forgive homogeneous 3-person penalty IF the bucket is literally only 1 team
+                if (isHomogenousBucket && g.length === 3 && new Set(g.map(e => e.team)).size === 1) {
+                    violation = 0;
+                }
                 g.pop();
 
                 let penalty = 0;
@@ -476,7 +490,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Phase 1: Try to pull perfect 0-penalty groups
             while (pool.length >= targetSize) {
-                let g = buildDiverseGroup(targetSize, pool, penaltyMatrix);
+                let g = buildDiverseGroup(targetSize, pool, penaltyMatrix, isBucket);
                 if (getGroupViolationScore(g, isBucket) === 0) {
                     pushDraft(g, targetSize);
                 } else {
@@ -487,7 +501,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Phase 2: Combine all imperfects and forcefully pair them up so they aren't abandoned
             let leftovers = [...pool, ...rejected];
             while (leftovers.length >= targetSize) {
-                let g = buildDiverseGroup(targetSize, leftovers, penaltyMatrix);
+                let g = buildDiverseGroup(targetSize, leftovers, penaltyMatrix, isBucket);
                 pushDraft(g, targetSize); // Ignore violation score, we just need pairs!
             }
 
@@ -540,14 +554,18 @@ document.addEventListener('DOMContentLoaded', () => {
         saveDraft(newDraft); // Syncs Draft to Firebase immediately
     }
 
-    function buildDiverseGroup(size, pool, penaltyMatrix) {
+    function buildDiverseGroup(size, pool, penaltyMatrix, isBucket = false) {
         let group = [pool.shift()];
         while (group.length < size && pool.length > 0) {
-            let existingTeams = group.map(e => e.team);
             let candidates = [...pool];
             candidates.forEach(cand => {
                 let score = 0;
-                if (existingTeams.includes(cand.team)) score += 100;
+
+                // Temporarily add candidate to calculate exact violation score
+                group.push(cand);
+                score += getGroupViolationScore(group, isBucket) * 3000;
+                group.pop();
+
                 group.forEach(existingMember => {
                     if (penaltyMatrix[cand.id] && penaltyMatrix[cand.id][existingMember.id]) {
                         score += penaltyMatrix[cand.id][existingMember.id] * 10;
