@@ -1,4 +1,17 @@
 document.addEventListener('DOMContentLoaded', () => {
+    window.onerror = function (msg, url, line, col, error) {
+        const errDiv = document.createElement('div');
+        errDiv.style.position = 'fixed';
+        errDiv.style.top = '0';
+        errDiv.style.left = '0';
+        errDiv.style.background = 'red';
+        errDiv.style.color = 'white';
+        errDiv.style.padding = '20px';
+        errDiv.style.zIndex = '9999';
+        errDiv.innerHTML = `<h3>⚠️ 에러 발생! 이 화면을 캡쳐해서 지니봇에게 보여주세요.</h3><p>${msg}</p><p>Line: ${line}</p><pre>${error ? error.stack : ''}</pre>`;
+        document.body.appendChild(errDiv);
+        return false;
+    };
 
     // --- State Persistence Managers (FIREBASE) ---
     // Wait for Firebase to initialize from index.html module script
