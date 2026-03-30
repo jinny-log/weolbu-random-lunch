@@ -509,6 +509,7 @@ document.addEventListener('DOMContentLoaded', () => {
             nav.tabs.style.display = 'flex';
             headers.admin.classList.remove('hidden');
             headers.user.classList.add('hidden');
+            document.querySelectorAll('.admin-only').forEach(el => el.style.display = '');
             if (historyManager.saveBtn) historyManager.saveBtn.style.display = 'block';
 
             // Show draft
@@ -517,6 +518,7 @@ document.addEventListener('DOMContentLoaded', () => {
             nav.tabs.style.display = 'none';
             headers.admin.classList.add('hidden');
             headers.user.classList.remove('hidden');
+            document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'none');
             if (historyManager.saveBtn) historyManager.saveBtn.style.display = 'none';
 
             if (groups && groups.length > 0) {
