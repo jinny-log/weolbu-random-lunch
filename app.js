@@ -233,80 +233,70 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 800);
     }
 
-    // --- Slack Integration & Copy Image ---
-    const copyImageBtn = document.getElementById('copy-image-btn');
-    if (copyImageBtn) {
-        copyImageBtn.addEventListener('click', async () => {
-            if (!groups || groups.length === 0) {
-                alert('복사할 매칭 결과(그룹)가 없습니다.');
-                return;
-            }
-
-            const targetElement = document.getElementById('matching-results');
-            if (!targetElement) return;
-
-            copyImageBtn.textContent = '찍는 중... 📸';
-            copyImageBtn.disabled = true;
+    // --- Slack Integration & Text/Excel Copy ---
+    
+    // 1. Text Copy
+    const copyTextBtn = document.getElementById('copy-text-btn');
+    if (copyTextBtn) {
+        copyTextBtn.addEventListener('click', async () => {
+            if (!groups || groups.length === 0) return alert('복사할 매칭 결과가 없습니다.');
+            const dateStr = matching.weekLabel ? matching.weekLabel.textContent : '이번 주';
+            let textStr = `🥘 *${dateStr} 랜덤 런치 조 편성 안내*\n\n`;
+            groups.forEach((group, idx) => {
+                let isBuddyGroup = group.some(emp => emp.buddyId && group.some(b => b.id === emp.buddyId));
+                let buddyBadge = isBuddyGroup ? " [🤝 버디 조]" : "";
+                let memberNames = group.map(e => {
+                    let tags = `[${e.team}]`;
+                    if(e.isNewHire) tags += "🐥";
+                    return `${tags} ${e.name}`;
+                }).join(' / ');
+                textStr += `*🔹 조 ${idx + 1} 조*${buddyBadge}\n> ${memberNames}\n`;
+            });
 
             try {
-                if (typeof html2canvas === 'undefined') {
-                    throw new Error('html2canvas library not loaded');
-                }
-
-                const originalStyle = targetElement.style.cssText;
-                
-                // 모바일 슬랙 환경에서도 글자가 큼직하게 보이도록 해상도/크기 강제 조절 
-                targetElement.style.width = '800px'; 
-                targetElement.style.gridTemplateColumns = 'repeat(2, 1fr)'; 
-                targetElement.style.padding = '24px';
-                targetElement.style.background = '#FFFFFF';
-                targetElement.style.borderRadius = '16px';
-                targetElement.style.boxShadow = 'none'; // 캡처 시 그림자 짤림 방지
-
-                const canvas = await html2canvas(targetElement, {
-                    scale: 2, 
-                    backgroundColor: '#F9FAFB', 
-                    useCORS: true 
-                });
-
-                targetElement.style.cssText = originalStyle; // revert
-
-                canvas.toBlob(async (blob) => {
-                    if (!blob) throw new Error('Blob generation failed');
-                    try {
-                        const item = new ClipboardItem({ "image/png": blob });
-                        await navigator.clipboard.write([item]);
-                        alert('📸 화면 그대로 예쁘게 클립보드에 복사되었습니다!\n슬랙 대화창에 가셔서 Ctrl+V (붙여넣기) 하시면 완성입니다. ✨');
-                    } catch (clipErr) {
-                        console.error('Clipboard write error:', clipErr);
-                        alert('브라우저 권한 문제로 클립보드에 접근할 수 없습니다. 대신 우클릭하여 직접 복사/저장해주세요.');
-                        // Fallback: append image to body to let user copy it
-                        const img = document.createElement('img');
-                        img.src = URL.createObjectURL(blob);
-                        img.className = 'glass';
-                        img.style.cssText = 'position:fixed; top:10%; left:50%; transform:translateX(-50%); max-width:80%; max-height:80%; z-index:99999; cursor:zoom-out; border: 4px solid white; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); border-radius: 12px;';
-                        img.onclick = () => document.body.removeChild(img);
-                        const hint = document.createElement('div');
-                        hint.innerHTML = '<b style="font-size:1.2rem; color:red;">[우클릭 -> 이미지 복사]</b> 후 아무 곳이나 클릭해 닫아주세요.';
-                        hint.style.cssText = 'position:absolute; top:-30px; left:0; width:100%; text-align:center; color:#1F2937;';
-                        img.appendChild(hint);
-                        
-                        document.body.appendChild(img);
-                    } finally {
-                        copyImageBtn.textContent = '📸 예쁘게 이미지 복사';
-                        copyImageBtn.disabled = false;
-                    }
-                }, "image/png", 1.0);
-
+                await navigator.clipboard.writeText(textStr);
+                alert('📋 슬랙용 텍스트가 클립보드에 복사되었습니다!\n슬랙 대화창에 바로 붙여넣기 하세요.');
             } catch (err) {
-                console.error(err);
-                alert('이미지 캡쳐 중 오류가 발생했습니다 ㅠㅠ');
-                copyImageBtn.textContent = '📸 예쁘게 이미지 복사';
-                copyImageBtn.disabled = false;
+                alert('복사 실패! 브라우저 권한을 확인해주세요.');
             }
         });
     }
 
+    // 2. Excel/Sheet Copy
+    const copyExcelBtn = document.getElementById('copy-excel-btn');
+    if (copyExcelBtn) {
+        copyExcelBtn.addEventListener('click', async () => {
+            if (!groups || groups.length === 0) return alert('복사할 매칭 결과가 없습니다.');
+            let excelStr = "";
+            const groupsPerRow = 4;
+            
+            for (let i = 0; i < groups.length; i += groupsPerRow) {
+                let headerRow = [];
+                let dataRow = [];
+                for (let j = 0; j < groupsPerRow && (i+j) < groups.length; j++) {
+                    let g = groups[i+j];
+                    let isBuddyGroup = g.some(emp => emp.buddyId && g.some(b => b.id === emp.buddyId));
+                    let badge = isBuddyGroup ? " (🤝버디)" : "";
+                    
+                    headerRow.push(`조 ${i+j+1}${badge}`);
+                    
+                    let members = g.map(e => e.name).join(', ');
+                    dataRow.push(members);
+                }
+                excelStr += headerRow.join('\t') + '\n';
+                excelStr += dataRow.join('\t') + '\n\n';
+            }
+
+            try {
+                await navigator.clipboard.writeText(excelStr);
+                alert('📊 구글시트/엑셀용 표 데이터가 복사되었습니다!\n스프레드시트에 Ctrl+V 하시면 밀림 없이 깔끔한 표 형태로 쏙 들어갑니다.');
+            } catch (err) {
+                alert('복사 실패! 브라우저 권한을 확인해주세요.');
+            }
+        });
+    }
+
+    // 3. Send Slack Text directly
     const saveSlackBtn = document.getElementById('save-slack-btn');
     const slackWebhookInput = document.getElementById('slack-webhook-input');
     if (saveSlackBtn && slackWebhookInput) {
@@ -341,74 +331,70 @@ document.addEventListener('DOMContentLoaded', () => {
             const rawTs = match[2];
             const threadTs = rawTs.slice(0, Math.max(0, rawTs.length - 6)) + '.' + rawTs.slice(-6);
 
-            const targetElement = document.getElementById('matching-results');
-            if (!targetElement) return;
-
-            if (!confirm('현재 화면에 보이는 예쁜 매칭표를 사진으로 찰칵 찍어 슬랙 스레드로 쏘시겠습니까?')) return;
+            if (!confirm('현재 매칭 결과를 슬랙 스레드에 깔끔한 텍스트로 즉시 쏘시겠습니까?')) return;
 
             sendSlackBtn.textContent = '스레드로 쏘는 중... 🚀';
             sendSlackBtn.disabled = true;
 
             try {
-                if (typeof html2canvas === 'undefined') throw new Error('html2canvas library is not loaded');
-
-                const originalStyle = targetElement.style.cssText;
-                
-                // 모바일 슬랙 환경에서도 글자가 큼직하게 보이도록 해상도/크기 강제 조절 
-                targetElement.style.width = '800px'; 
-                targetElement.style.gridTemplateColumns = 'repeat(2, 1fr)'; 
-                targetElement.style.padding = '24px';
-                targetElement.style.background = '#FFFFFF';
-                targetElement.style.borderRadius = '16px';
-                targetElement.style.boxShadow = 'none'; // 캡처 시 그림자 짤림 방지
-
-                const canvas = await html2canvas(targetElement, {
-                    scale: 2,
-                    backgroundColor: '#F9FAFB',
-                    useCORS: true
-                });
-                targetElement.style.cssText = originalStyle;
-
-                canvas.toBlob(async (blob) => {
-                    if (!blob) throw new Error('Blob generation failed');
-                    
-                    const dateStr = matching.weekLabel ? matching.weekLabel.textContent : '이번 주';
-                    const formData = new FormData();
-                    formData.append('channels', channelId);
-                    formData.append('thread_ts', threadTs);
-                    formData.append('initial_comment', `🥘 *${dateStr} 랜덤 런치 조 편성 결과* 안내드립니다. 확인해 주세요! (결과는 아래 표를 터치해서 크게 보세요 ✨)`);
-                    formData.append('file', blob, 'random-lunch-groups.png');
-
-                    try {
-                        const response = await fetch('https://slack.com/api/files.upload', {
-                            method: 'POST',
-                            headers: {
-                                'Authorization': `Bearer ${slackWebhookUrl}`
-                            },
-                            body: formData
-                        });
-
-                        const data = await response.json();
-                        if (data.ok) {
-                            alert('🎉 슬랙 지정하신 스레드로 결과 이미지 전송이 눈 깜짝할 새 완료되었습니다!');
-                            if (threadLinkInput) threadLinkInput.value = ''; // clear input on success
-                        } else {
-                            console.error('Slack API Error:', data);
-                            alert(`슬랙 전송 실패: ${data.error}\n(우리가 만든 슬랙 앱이 해당 채널에 초대되어 있는지 꼭 확인해 주시고, files:write 권한이 있는지 확인하세요!)`);
+                const dateStr = matching.weekLabel ? matching.weekLabel.textContent : '이번 주';
+                let blocks = [
+                    {
+                        "type": "header",
+                        "text": {
+                            "type": "plain_text",
+                            "text": `🥘 ${dateStr} 랜덤 런치 조 편성 결과`,
+                            "emoji": true
                         }
-                    } catch (fetchErr) {
-                        console.error(fetchErr);
-                        alert('슬랙 전송 중 네트워크 요류가 발생했습니다.');
-                    } finally {
-                        sendSlackBtn.textContent = '💬 스레드로 자동 전송';
-                        sendSlackBtn.disabled = false;
-                    }
-                }, "image/png", 1.0);
+                    },
+                    { "type": "divider" }
+                ];
 
+                groups.forEach((group, idx) => {
+                    let isBuddyGroup = group.some(emp => emp.buddyId && group.some(b => b.id === emp.buddyId));
+                    let buddyBadge = isBuddyGroup ? " [🤝 버디 조]" : "";
+                    let memberInfo = group.map(emp => {
+                        let tags = [];
+                        tags.push(`[${emp.team}]`);
+                        if (emp.isNewHire) tags.push("🐥신규");
+                        return `*${emp.name}* ${tags.join('')}`;
+                    }).join('   /   ');
+
+                    blocks.push({
+                        "type": "section",
+                        "text": {
+                            "type": "mrkdwn",
+                            "text": `*🔹 조 ${idx + 1} 조*${buddyBadge}\n> ${memberInfo}`
+                        }
+                    });
+                });
+
+                // Vercel Serverless Function 호출로 브라우저 CORS 문제를 우회합니다!
+                const response = await fetch('/api/slack', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        token: slackWebhookUrl,
+                        channel: channelId,
+                        thread_ts: threadTs,
+                        blocks: blocks,
+                        text: `🥘 ${dateStr} 랜덤 런치 조 편성 결과`
+                    })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    alert('🎉 슬랙 지정하신 스레드로 깔끔한 텍스트 결과 전송이 완료되었습니다!');
+                    if (threadLinkInput) threadLinkInput.value = ''; // clear input on success
+                } else {
+                    console.error('Slack API Error:', data);
+                    alert(`슬랙 전송 실패: ${data.error}\n(우리가 만든 슬랙 앱이 해당 채널에 추가되어 있는지 꼭 확인해 주세요!)`);
+                }
             } catch (error) {
-                console.error('Slack image capture error:', error);
-                alert('이미지 캡처 중 오류가 발생하여 전송을 취소했습니다.');
-                sendSlackBtn.textContent = '💬 스레드로 자동 전송';
+                console.error('Slack network error:', error);
+                alert('안전한 전송을 위한 서버와 연결 중 네트워크 오류가 발생했습니다. (Vercel 배포 완료 시 정상 작동합니다.)');
+            } finally {
+                sendSlackBtn.textContent = '🚀 지정 스레드로 1초 만에 텍스트 전송!';
                 sendSlackBtn.disabled = false;
             }
         });

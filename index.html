@@ -141,13 +141,16 @@
                <div style="display: flex; justify-content: space-between; flex-wrap: wrap; gap: 1rem; align-items: center;">
                  <div>
                    <h4 style="color: #86198f; font-weight: 700; margin: 0 0 0.4rem 0;">💬 슬랙(Slack) 스레드 전송 패널</h4>
-                   <p style="font-size: 0.85rem; color: #a21caf; margin: 0;">스마트폰에서도 글자가 크게 보이도록 <b>고화질 2분할 레이아웃 적용 사진</b>으로 전송됩니다.</p>
+                   <p style="font-size: 0.85rem; color: #a21caf; margin: 0;">가독성을 위해 깔끔한 <b>텍스트 표 형식</b>으로 전송됩니다.</p>
+                 </div>
+                 <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                   <button id="copy-text-btn" class="secondary-btn" style="padding: 0.5rem 1rem; font-size: 0.85rem; background: white; color: #c026d3; border-color: #e879f9;">📋 슬랙용 텍스트 복사</button>
+                   <button id="copy-excel-btn" class="secondary-btn" style="padding: 0.5rem 1rem; font-size: 0.85rem; background: #FFFBEB; color: #B45309; border-color: #FDE68A;">📊 구글시트/엑셀용 표 복사</button>
                  </div>
                </div>
                <div style="display: flex; gap: 0.5rem; margin-top: 1rem; flex-wrap: wrap; align-items: center;">
-                 <input type="text" id="slack-thread-link" placeholder="알림을 달고 싶은 기존 슬랙 메시지 '링크(주소)'를 이곳에 붙여넣으세요" style="flex: 1; min-width: 300px; padding: 0.75rem; font-size: 0.9rem; border-radius: 8px; border: 1px solid #f0abfc;">
-                 <button id="send-slack-btn" class="secondary-btn" style="padding: 0.75rem 1.5rem; font-size: 0.95rem; font-weight: 600; background: #a21caf; color: white; border: none; white-space: nowrap;">🚀 지정 스레드로 1초 만에 전송!</button>
-                 <button id="copy-image-btn" class="secondary-btn" style="padding: 0.75rem 1.25rem; font-size: 0.9rem; background: white; color: #c026d3; border: 1px solid #e879f9; white-space: nowrap;">📸 테스트용 직접 캡처</button>
+                 <input type="text" id="slack-thread-link" placeholder="알림을 달고 싶은 일림 공지글 '스레드(주소)'를 이곳에 붙여넣으세요" style="flex: 1; min-width: 300px; padding: 0.75rem; font-size: 0.9rem; border-radius: 8px; border: 1px solid #f0abfc;">
+                 <button id="send-slack-btn" class="secondary-btn" style="padding: 0.75rem 1.5rem; font-size: 0.95rem; font-weight: 600; background: #a21caf; color: white; border: none; white-space: nowrap;">🚀 지정 스레드로 1초 만에 텍스트 전송!</button>
                </div>
             </div>
             <div id="matching-results" class="results-grid">
