@@ -166,25 +166,41 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        // 2. Listen for Employees changes
+        let lastParticipatingCount = -1;
         fbOnValue(fbRef(db, 'employees'), (snapshot) => {
             const val = snapshot.val();
+            let changedCount = false;
+            
             if (val) {
                 employees = val;
-                // Keep current user session synced if they are logged in
                 if (currentUser) {
                     const updatedMe = employees.find(e => e.name === currentUser.name);
                     if (updatedMe) currentUser.isParticipating = updatedMe.isParticipating;
                 }
             } else {
-                // Initial DB population
                 fbSet(fbRef(db, 'employees'), defaultEmployees);
                 employees = defaultEmployees;
             }
+            
+            const newCount = employees.filter(e => e.isParticipating).length;
+            if (lastParticipatingCount !== -1 && lastParticipatingCount !== newCount) {
+                changedCount = true;
+            }
+            lastParticipatingCount = newCount;
+
             renderEmployeeList();
             renderBuddyOptions();
             updateEmpCount();
             if (currentUser) renderUserParticipationStatus();
+
+            // Auto-trigger advanced matching if admin is viewing an active draft and attendance changed!
+            if (changedCount && currentUser && currentUser.name === '지니') {
+                if (groups && groups.length > 0) {
+                    console.log('Attendance count changed, auto-regenerating matching...');
+                    // Add slight delay to avoid blocking render
+                    setTimeout(() => generateAdvancedGroups(), 100);
+                }
+            }
         });
 
         // 3. Listen for History changes
