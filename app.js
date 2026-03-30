@@ -263,65 +263,50 @@ document.addEventListener('DOMContentLoaded', () => {
         tableDiv.style.position = 'absolute';
         tableDiv.style.left = '-9999px';
         tableDiv.style.top = '-9999px';
-        tableDiv.style.background = '#F9FAFB'; // Subtle gray for nice contrast
-        tableDiv.style.padding = '60px';
-        tableDiv.style.width = '1400px'; 
+        tableDiv.style.background = '#FFFFFF';
+        tableDiv.style.padding = '30px';
+        tableDiv.style.width = '1500px'; 
         tableDiv.style.fontFamily = "'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif";
         tableDiv.style.boxSizing = 'border-box';
         
-        // Header
-        let html = `
-        <div style="background: white; padding: 30px 40px; border-radius: 24px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); margin-bottom: 50px; text-align: center; border-bottom: 6px solid #3B82F6;">
-            <h2 style="margin: 0; color: #111827; font-size: 42px; font-weight: 800; letter-spacing: -1px;">🍲 ${weekStr} 랜덤 런치 조 편성 🍲</h2>
-            <p style="margin: 12px 0 0 0; color: #6B7280; font-size: 22px; font-weight: 500;">🍙 맛있는 점심시간 되세요! 🎉</p>
-        </div>
-        <div style="display: flex; flex-wrap: wrap; gap: 30px; justify-content: flex-start;">`;
+        let tableHtml = `
+        <h2 style="margin: 0 0 20px 0; color: #111827; font-size: 32px; text-align: center; letter-spacing: -0.5px;">🍲 ${weekStr} 랜덤 런치 조 편성 표</h2>
+        <table style="width: 100%; border-collapse: collapse; border: 2px solid #374151;">
+        <tbody>`;
         
-        // Brand color palettes
-        const colors = [
-            { bg: '#EEF2FF', text: '#4338CA', border: '#C7D2FE' }, // Indigo
-            { bg: '#ECFDF5', text: '#047857', border: '#A7F3D0' }, // Emerald
-            { bg: '#FFF7ED', text: '#C2410C', border: '#FED7AA' }, // Orange
-            { bg: '#FDF4FF', text: '#A21CAF', border: '#F5D0FE' }, // Fuchsia
-            { bg: '#EFF6FF', text: '#1D4ED8', border: '#BFDBFE' }, // Blue
-            { bg: '#FEF2F2', text: '#B91C1C', border: '#FECACA' }, // Red
-            { bg: '#F5F3FF', text: '#6D28D9', border: '#DDD6FE' }, // Violet
-            { bg: '#F0FDF4', text: '#15803D', border: '#BBF7D0' }, // Green
-        ];
-
-        groups.forEach((g, idx) => {
-            let color = colors[idx % colors.length];
-            let isBuddyGroup = g.some(emp => emp.buddyId && g.some(b => b.id === emp.buddyId));
-            let badge = isBuddyGroup ? `<span style="background: #FFFBEB; color: #D97706; font-size: 16px; padding: 4px 10px; border-radius: 20px; font-weight: 700; margin-left: auto; border: 1px solid #FDE68A;">🤝 버디 조</span>` : "";
-            
-            let membersHtml = g.map(e => {
-                let initial = e.name.charAt(0);
-                let tag = e.isNewHire ? `<span style="font-size:18px;">🐥</span>` : '';
-                return `
-                <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 12px; background: #F3F4F6; padding: 12px 18px; border-radius: 16px; border: 1px solid #E5E7EB;">
-                    <div style="width: 44px; height: 44px; border-radius: 50%; background: ${color.bg}; color: ${color.text}; border: 1px solid ${color.border}; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 800; flex-shrink: 0;">
-                        ${initial}
-                    </div>
-                    <div style="font-size: 22px; font-weight: 700; color: #1F2937; letter-spacing: -0.5px;">
-                        ${e.name} ${tag}
-                    </div>
-                </div>`;
-            }).join('');
-            
-            html += `
-            <div style="background: white; width: calc(33.333% - 20px); border-radius: 24px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05); overflow: hidden; border: 1px solid #E5E7EB; margin-bottom: 20px;">
-                <div style="background: ${color.bg}; padding: 18px 24px; display: flex; align-items: center; border-bottom: 2px solid ${color.border};">
-                    <div style="font-size: 28px; font-weight: 900; color: ${color.text};">조 ${idx + 1}</div>
-                    ${badge}
-                </div>
-                <div style="padding: 24px 24px 12px 24px;">
-                    ${membersHtml}
-                </div>
-            </div>`;
-        });
+        const cols = 5; // 5 columns makes it wider, shorter vertically!
+        let groupIdx = 0;
+        for (let i = 0; i < groups.length; i += cols) {
+            tableHtml += `<tr>`;
+            for (let j = 0; j < cols; j++) {
+                if (groupIdx < groups.length) {
+                    let g = groups[groupIdx];
+                    let isBuddyGroup = g.some(emp => emp.buddyId && g.some(b => b.id === emp.buddyId));
+                    let badge = isBuddyGroup ? `<span style="color:#D97706; font-size:14px; margin-left:4px; font-weight: 700;">(🤝버디)</span>` : "";
+                    
+                    let memberStr = g.map(e => {
+                        let tag = e.isNewHire ? '🐥' : '';
+                        return `<span style="display:inline-block; padding:4px 8px; background:#F1F5F9; border-radius:6px; margin:2px 4px 2px 0; font-weight: 600; color: #334155; font-size: 16px; border: 1px solid #E2E8F0;">${e.name}${tag}</span>`;
+                    }).join('');
+                    
+                    tableHtml += `
+                    <td style="border: 1px solid #CBD5E1; padding: 14px 16px; vertical-align: top; width: 20%;">
+                        <div style="font-weight: 800; margin-bottom: 10px; color: #0F172A; font-size: 18px; border-bottom: 2px solid #E2E8F0; padding-bottom: 8px; display: flex; align-items: center; justify-content: space-between;">
+                            <span>조 ${groupIdx+1}</span>
+                            ${badge}
+                        </div>
+                        <div style="line-height: 1.5;">${memberStr}</div>
+                    </td>`;
+                } else {
+                    tableHtml += `<td style="border: 1px solid #CBD5E1; padding: 14px 16px; width: 20%; background: #F8FAFC;"></td>`;
+                }
+                groupIdx++;
+            }
+            tableHtml += `</tr>`;
+        }
         
-        html += `</div>`;
-        tableDiv.innerHTML = html;
+        tableHtml += `</tbody></table>`;
+        tableDiv.innerHTML = tableHtml;
         document.body.appendChild(tableDiv);
         return tableDiv;
     }
