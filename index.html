@@ -140,17 +140,18 @@
             <div class="slack-panel admin-only glass" style="margin-bottom: 2rem; padding: 1.5rem; border-radius: 12px; background: linear-gradient(135deg, #fdf4ff, #fae8ff); border: 1px solid #e879f9; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
                <div style="display: flex; justify-content: space-between; flex-wrap: wrap; gap: 1rem; align-items: center;">
                  <div>
-                   <h4 style="color: #86198f; font-weight: 700; margin: 0 0 0.4rem 0;">💬 슬랙(Slack) 스레드 전송 패널</h4>
-                   <p style="font-size: 0.85rem; color: #a21caf; margin: 0;">가독성을 위해 깔끔한 <b>텍스트 표 형식</b>으로 전송됩니다.</p>
+                   <h4 style="color: #86198f; font-weight: 700; margin: 0 0 0.4rem 0;">💬 슬랙(Slack) 공지 스레드 전송 패널</h4>
+                   <p style="font-size: 0.85rem; color: #a21caf; margin: 0;">가독성을 위해 깔끔한 <b>표 이미지 형식</b> 또는 <b>텍스트 형식</b>으로 복사하거나 전송할 수 있습니다.</p>
                  </div>
                  <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-                   <button id="copy-text-btn" class="secondary-btn" style="padding: 0.5rem 1rem; font-size: 0.85rem; background: white; color: #c026d3; border-color: #e879f9;">📋 슬랙용 텍스트 복사</button>
-                   <button id="copy-excel-btn" class="secondary-btn" style="padding: 0.5rem 1rem; font-size: 0.85rem; background: #FFFBEB; color: #B45309; border-color: #FDE68A;">📊 구글시트/엑셀용 표 복사</button>
+                   <button id="copy-image-btn" class="secondary-btn" style="padding: 0.5rem 1rem; font-size: 0.85rem; background: #FFFBEB; color: #B45309; border-color: #FDE68A; font-weight: 600;">📸 깔끔한 "표(테이블) 이미지"로 복사</button>
+                   <button id="copy-excel-btn" class="secondary-btn" style="padding: 0.5rem 1rem; font-size: 0.85rem; background: white; color: #10B981; border-color: #34D399;">📊 엑셀 모양 그대로 복사</button>
+                   <button id="copy-text-btn" class="secondary-btn" style="padding: 0.5rem 1rem; font-size: 0.85rem; background: white; color: #6B7280; border-color: #D1D5DB;">📋 단순 텍스트 복사</button>
                  </div>
                </div>
                <div style="display: flex; gap: 0.5rem; margin-top: 1rem; flex-wrap: wrap; align-items: center;">
                  <input type="text" id="slack-thread-link" placeholder="알림을 달고 싶은 일림 공지글 '스레드(주소)'를 이곳에 붙여넣으세요" style="flex: 1; min-width: 300px; padding: 0.75rem; font-size: 0.9rem; border-radius: 8px; border: 1px solid #f0abfc;">
-                 <button id="send-slack-btn" class="secondary-btn" style="padding: 0.75rem 1.5rem; font-size: 0.95rem; font-weight: 600; background: #a21caf; color: white; border: none; white-space: nowrap;">🚀 지정 스레드로 1초 만에 텍스트 전송!</button>
+                 <button id="send-slack-btn" class="secondary-btn" style="padding: 0.75rem 1.5rem; font-size: 0.95rem; font-weight: 600; background: #a21caf; color: white; border: none; white-space: nowrap;">🚀 지정 스레드로 "표(테이블) 이미지" 1초만에 전송!</button>
                </div>
             </div>
             <div id="matching-results" class="results-grid">
