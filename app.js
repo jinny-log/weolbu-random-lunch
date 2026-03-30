@@ -370,41 +370,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // 2. Excel/Sheet Copy
-    const copyExcelBtn = document.getElementById('copy-excel-btn');
-    if (copyExcelBtn) {
-        copyExcelBtn.addEventListener('click', async () => {
-            if (!groups || groups.length === 0) return alert('복사할 매칭 결과가 없습니다.');
-            let excelStr = "";
-            const groupsPerRow = 4;
-            
-            for (let i = 0; i < groups.length; i += groupsPerRow) {
-                let headerRow = [];
-                let dataRow = [];
-                for (let j = 0; j < groupsPerRow && (i+j) < groups.length; j++) {
-                    let g = groups[i+j];
-                    let isBuddyGroup = g.some(emp => emp.buddyId && g.some(b => b.id === emp.buddyId));
-                    let badge = isBuddyGroup ? " (🤝버디)" : "";
-                    
-                    headerRow.push(`조 ${i+j+1}${badge}`);
-                    
-                    let members = g.map(e => e.name).join(', ');
-                    dataRow.push(members);
-                }
-                excelStr += headerRow.join('\t') + '\n';
-                excelStr += dataRow.join('\t') + '\n\n';
-            }
-
-            try {
-                await navigator.clipboard.writeText(excelStr);
-                alert('📊 구글시트/엑셀용 표 데이터가 복사되었습니다!\n스프레드시트에 Ctrl+V 하시면 밀림 없이 깔끔한 표 형태로 쏙 들어갑니다.');
-            } catch (err) {
-                alert('복사 실패! 브라우저 권한을 확인해주세요.');
-            }
-        });
-    }
-
-    // 3. Send Slack Text directly
+    // 2. Send Slack Text directly
     const saveSlackBtn = document.getElementById('save-slack-btn');
     const slackWebhookInput = document.getElementById('slack-webhook-input');
     if (saveSlackBtn && slackWebhookInput) {
