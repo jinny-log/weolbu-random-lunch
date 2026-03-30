@@ -36,6 +36,7 @@
     window.fbOnValue = onValue;
     window.fbGet = get;
   </script>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 </head>
 
 <body>
@@ -127,8 +128,8 @@
               style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 1rem;">
               <h3 style="font-size: 1.25rem; font-weight: 700;">매칭 결과</h3>
               <div style="display: flex; gap: 1rem; align-items: center;">
-                <button id="copy-text-btn" class="secondary-btn admin-only"
-                  style="padding: 0.5rem 1rem; font-size: 0.85rem; background: #f3f4f6; color: #111827; border-color: #d1d5db;">📋 텍스트 복사</button>
+                <button id="copy-image-btn" class="secondary-btn admin-only"
+                  style="padding: 0.5rem 1rem; font-size: 0.85rem; background: #FFFBEB; color: #B45309; border-color: #FDE68A;">📸 예쁘게 이미지 복사</button>
                 <button id="send-slack-btn" class="secondary-btn admin-only"
                   style="padding: 0.5rem 1rem; font-size: 0.85rem; background: #611f69; color: white; border-color: #611f69;">💬 슬랙 결과 전송</button>
                 <button id="add-empty-group-btn" class="secondary-btn admin-only"

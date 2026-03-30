@@ -233,48 +233,73 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 800);
     }
 
-    // --- Slack Integration & Copy Text ---
-    const copyTextBtn = document.getElementById('copy-text-btn');
-    if (copyTextBtn) {
-        copyTextBtn.addEventListener('click', async () => {
+    // --- Slack Integration & Copy Image ---
+    const copyImageBtn = document.getElementById('copy-image-btn');
+    if (copyImageBtn) {
+        copyImageBtn.addEventListener('click', async () => {
             if (!groups || groups.length === 0) {
                 alert('복사할 매칭 결과(그룹)가 없습니다.');
                 return;
             }
 
-            const dateStr = matching.weekLabel ? matching.weekLabel.textContent : '이번 주';
-            let contentString = `🥘 *${dateStr} 랜덤 런치 조 편성 안내*\n\n`;
+            const targetElement = document.getElementById('matching-results');
+            if (!targetElement) return;
 
-            groups.forEach((group, idx) => {
-                let isBuddyGroup = group.some(emp => emp.buddyId && group.some(b => b.id === emp.buddyId));
-                let buddyBadge = isBuddyGroup ? " [🤝 버디 조]" : "";
-
-                let memberInfo = group.map(emp => {
-                    let tags = [];
-                    tags.push(`[${emp.team}]`);
-                    if (emp.isNewHire) tags.push("🐥신규");
-                    return `${emp.name} ${tags.join('')}`;
-                }).join(' / ');
-
-                contentString += `*🔹 조 ${idx + 1} 조${buddyBadge}*\n  > ${memberInfo}\n\n`;
-            });
+            copyImageBtn.textContent = '찍는 중... 📸';
+            copyImageBtn.disabled = true;
 
             try {
-                await navigator.clipboard.writeText(contentString);
-                alert('👉 결과가 텍스트로 예쁘게 복사되었습니다!\n원하시는 슬랙 스레드 창에 가셔서 Ctrl+V(붙여넣기) 해주세요.');
-            } catch (err) {
-                // Fallback for older browsers or unstable contexts
-                const textArea = document.createElement("textarea");
-                textArea.value = contentString;
-                document.body.appendChild(textArea);
-                textArea.select();
-                try {
-                    document.execCommand('copy');
-                    alert('👉 결과가 텍스트로 예쁘게 복사되었습니다!\n원하시는 슬랙 스레드 창에 가셔서 Ctrl+V(붙여넣기) 해주세요.');
-                } catch (err2) {
-                    alert('클립보드 복사 중 오류가 발생했습니다.');
+                if (typeof html2canvas === 'undefined') {
+                    throw new Error('html2canvas library not loaded');
                 }
-                document.body.removeChild(textArea);
+
+                const originalStyle = targetElement.style.cssText;
+                // Add padding so the screenshot doesn't cut off shadows
+                targetElement.style.padding = '20px';
+                targetElement.style.background = '#FFFFFF';
+                targetElement.style.borderRadius = '16px';
+                targetElement.style.boxShadow = '0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01)';
+
+                const canvas = await html2canvas(targetElement, {
+                    scale: 2, 
+                    backgroundColor: '#F9FAFB', 
+                    useCORS: true 
+                });
+
+                targetElement.style.cssText = originalStyle; // revert
+
+                canvas.toBlob(async (blob) => {
+                    if (!blob) throw new Error('Blob generation failed');
+                    try {
+                        const item = new ClipboardItem({ "image/png": blob });
+                        await navigator.clipboard.write([item]);
+                        alert('📸 화면 그대로 예쁘게 클립보드에 복사되었습니다!\n슬랙 대화창에 가셔서 Ctrl+V (붙여넣기) 하시면 완성입니다. ✨');
+                    } catch (clipErr) {
+                        console.error('Clipboard write error:', clipErr);
+                        alert('브라우저 권한 문제로 클립보드에 접근할 수 없습니다. 대신 우클릭하여 직접 복사/저장해주세요.');
+                        // Fallback: append image to body to let user copy it
+                        const img = document.createElement('img');
+                        img.src = URL.createObjectURL(blob);
+                        img.className = 'glass';
+                        img.style.cssText = 'position:fixed; top:10%; left:50%; transform:translateX(-50%); max-width:80%; max-height:80%; z-index:99999; cursor:zoom-out; border: 4px solid white; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); border-radius: 12px;';
+                        img.onclick = () => document.body.removeChild(img);
+                        const hint = document.createElement('div');
+                        hint.innerHTML = '<b style="font-size:1.2rem; color:red;">[우클릭 -> 이미지 복사]</b> 후 아무 곳이나 클릭해 닫아주세요.';
+                        hint.style.cssText = 'position:absolute; top:-30px; left:0; width:100%; text-align:center; color:#1F2937;';
+                        img.appendChild(hint);
+                        
+                        document.body.appendChild(img);
+                    } finally {
+                        copyImageBtn.textContent = '📸 예쁘게 이미지 복사';
+                        copyImageBtn.disabled = false;
+                    }
+                }, "image/png", 1.0);
+
+            } catch (err) {
+                console.error(err);
+                alert('이미지 캡쳐 중 오류가 발생했습니다 ㅠㅠ');
+                copyImageBtn.textContent = '📸 예쁘게 이미지 복사';
+                copyImageBtn.disabled = false;
             }
         });
     }
