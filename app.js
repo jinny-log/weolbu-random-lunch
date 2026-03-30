@@ -254,11 +254,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 const originalStyle = targetElement.style.cssText;
-                // Add padding so the screenshot doesn't cut off shadows
-                targetElement.style.padding = '20px';
+                
+                // 모바일 슬랙 환경에서도 글자가 큼직하게 보이도록 해상도/크기 강제 조절 
+                targetElement.style.width = '800px'; 
+                targetElement.style.gridTemplateColumns = 'repeat(2, 1fr)'; 
+                targetElement.style.padding = '24px';
                 targetElement.style.background = '#FFFFFF';
                 targetElement.style.borderRadius = '16px';
-                targetElement.style.boxShadow = '0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01)';
+                targetElement.style.boxShadow = 'none'; // 캡처 시 그림자 짤림 방지
 
                 const canvas = await html2canvas(targetElement, {
                     scale: 2, 
@@ -350,10 +353,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (typeof html2canvas === 'undefined') throw new Error('html2canvas library is not loaded');
 
                 const originalStyle = targetElement.style.cssText;
-                targetElement.style.padding = '20px';
+                
+                // 모바일 슬랙 환경에서도 글자가 큼직하게 보이도록 해상도/크기 강제 조절 
+                targetElement.style.width = '800px'; 
+                targetElement.style.gridTemplateColumns = 'repeat(2, 1fr)'; 
+                targetElement.style.padding = '24px';
                 targetElement.style.background = '#FFFFFF';
                 targetElement.style.borderRadius = '16px';
-                targetElement.style.boxShadow = '0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01)';
+                targetElement.style.boxShadow = 'none'; // 캡처 시 그림자 짤림 방지
 
                 const canvas = await html2canvas(targetElement, {
                     scale: 2,

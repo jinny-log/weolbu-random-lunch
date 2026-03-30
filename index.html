@@ -125,25 +125,30 @@
 
           <div class="results-container" style="margin-top: 2rem;">
             <div class="results-header"
-              style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 1rem;">
-              <h3 style="font-size: 1.25rem; font-weight: 700;">매칭 결과</h3>
-              <div style="display: flex; gap: 1rem; align-items: center;">
-                <button id="copy-image-btn" class="secondary-btn admin-only"
-                  style="padding: 0.5rem 1rem; font-size: 0.85rem; background: #FFFBEB; color: #B45309; border-color: #FDE68A;">📸 예쁘게 이미지 복사</button>
-                <div style="display: flex; gap: 0.5rem; align-items: center;" class="admin-only">
-                  <input type="text" id="slack-thread-link" placeholder="여기에 슬랙 메시지 링크(주소)를 붙여넣으세요"
-                    style="font-size: 0.75rem; padding: 0.4rem; width: 220px; border-radius: 6px; border: 1px solid #D1D5DB;">
-                  <button id="send-slack-btn" class="secondary-btn"
-                    style="padding: 0.5rem 1rem; font-size: 0.85rem; background: #611f69; color: white; border-color: #611f69;">💬 스레드로 자동 전송</button>
-                </div>
-                <button id="add-empty-group-btn" class="secondary-btn admin-only"
-                  style="padding: 0.5rem 1rem; font-size: 0.85rem;">➕ 빈 그룹 추가</button>
-                <button id="save-history-btn" class="secondary-btn admin-only"
-                  style="padding: 0.5rem 1rem; font-size: 0.85rem; background: #10B981; color: white; border-color: #10B981;">💾 현재 매칭
-                  저장</button>
-                <span id="current-week-label" style="color: #6B7280; font-size: 1rem; font-weight: 500;">2026-02-20
-                  (8주차)</span>
+              style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+              <h3 style="font-size: 1.25rem; font-weight: 700; display: flex; align-items: center; gap: 1rem; margin: 0;">
+                매칭 결과 
+                <span id="current-week-label" style="color: #6B7280; font-size: 1rem; font-weight: 500;">2026-02-20 (8주차)</span>
+              </h3>
+              <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                <button id="add-empty-group-btn" class="secondary-btn admin-only" style="padding: 0.5rem 1rem; font-size: 0.85rem;">➕ 빈 그룹 추가</button>
+                <button id="save-history-btn" class="secondary-btn admin-only" style="padding: 0.5rem 1rem; font-size: 0.85rem; background: #10B981; color: white; border-color: #10B981;">💾 매칭 확정(저장)</button>
               </div>
+            </div>
+
+            <!-- New beautifully designed Slack Panel -->
+            <div class="slack-panel admin-only glass" style="margin-bottom: 2rem; padding: 1.5rem; border-radius: 12px; background: linear-gradient(135deg, #fdf4ff, #fae8ff); border: 1px solid #e879f9; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
+               <div style="display: flex; justify-content: space-between; flex-wrap: wrap; gap: 1rem; align-items: center;">
+                 <div>
+                   <h4 style="color: #86198f; font-weight: 700; margin: 0 0 0.4rem 0;">💬 슬랙(Slack) 스레드 전송 패널</h4>
+                   <p style="font-size: 0.85rem; color: #a21caf; margin: 0;">스마트폰에서도 글자가 크게 보이도록 <b>고화질 2분할 레이아웃 적용 사진</b>으로 전송됩니다.</p>
+                 </div>
+               </div>
+               <div style="display: flex; gap: 0.5rem; margin-top: 1rem; flex-wrap: wrap; align-items: center;">
+                 <input type="text" id="slack-thread-link" placeholder="알림을 달고 싶은 기존 슬랙 메시지 '링크(주소)'를 이곳에 붙여넣으세요" style="flex: 1; min-width: 300px; padding: 0.75rem; font-size: 0.9rem; border-radius: 8px; border: 1px solid #f0abfc;">
+                 <button id="send-slack-btn" class="secondary-btn" style="padding: 0.75rem 1.5rem; font-size: 0.95rem; font-weight: 600; background: #a21caf; color: white; border: none; white-space: nowrap;">🚀 지정 스레드로 1초 만에 전송!</button>
+                 <button id="copy-image-btn" class="secondary-btn" style="padding: 0.75rem 1.25rem; font-size: 0.9rem; background: white; color: #c026d3; border: 1px solid #e879f9; white-space: nowrap;">📸 테스트용 직접 캡처</button>
+               </div>
             </div>
             <div id="matching-results" class="results-grid">
               <!-- Groups will be injected here via JS -->
