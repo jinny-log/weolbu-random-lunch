@@ -1,0 +1,17 @@
+Script started on Tue Mar  3 09:04:45 2026
+;
+let valArr = Object.values(counts);
+let maxCount = Math.max(...(valArr.length ? valArr : [0]));
+document.body.innerHTML += maxCount;
+''')
+"
+[1m[7m%[27m[1m[0m                        [0m[27m[24m[Jjinny@jinnys-MacBook-Pro random-lunch % [K[?2004h;[?2004l
+[1m[7m%[27m[1m[0m                        [0m[27m[24m[Jjinny@jinnys-MacBook-Pro random-lunch % [K[?2004hllet valA [Krrr = Object.values(count [Kss);[?2004l
+zsh: number expected
+[1m[7m%[27m[1m[0m                        [0m[27m[24m[Jjinny@jinnys-MacBook-Pro random-lunch % [K[?2004hllet maxC [Koount = Math.max(...(valA [Krrr.length ? valArr : [0] [K)));[?2004l
+zsh: no matches found: Math.max(...(valArr.length ? valArr : [0]))
+[1m[7m%[27m[1m[0m                        [0m[27m[24m[Jjinny@jinnys-MacBook-Pro random-lunch % [K[?2004hddocument [K..body.innerHTML += maxCo [Kuunt;[?2004l
+zsh: command not found: document.body.innerHTML
+[1m[7m%[27m[1m[0m                        [0m[27m[24m[Jjinny@jinnys-MacBook-Pro random-lunch % [K[?2004h'''')[?2004l
+[0m[27m[24m[Jquote> [K[?2004h"[?2004l
+[0m[27m[24m[Jquote> [K[?2004h

@@ -54,6 +54,7 @@ document.addEventListener('DOMContentLoaded', () => {
     ];
     let savedDateLabel = "2024-XX-XX (X주차)";
     let currentUser = null;
+    let slackWebhookUrl = "";
 
     function saveEmployees() {
         fbSet(fbRef(db, 'employees'), employees);
@@ -217,11 +218,158 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
+        // 6. Listen for Slack Webhook changes
+        fbOnValue(fbRef(db, 'slackWebhook'), (snapshot) => {
+            slackWebhookUrl = snapshot.val() || "";
+            const slackInput = document.getElementById('slack-webhook-input');
+            if (slackInput) {
+                slackInput.value = slackWebhookUrl;
+            }
+        });
+
         // Hide loading screen after a short delay assuming first fetches return
         setTimeout(() => {
             views.loading.style.display = 'none';
         }, 800);
     }
+
+    // --- Slack Integration & Copy Text ---
+    const copyTextBtn = document.getElementById('copy-text-btn');
+    if (copyTextBtn) {
+        copyTextBtn.addEventListener('click', async () => {
+            if (!groups || groups.length === 0) {
+                alert('복사할 매칭 결과(그룹)가 없습니다.');
+                return;
+            }
+
+            const dateStr = matching.weekLabel ? matching.weekLabel.textContent : '이번 주';
+            let contentString = `🥘 *${dateStr} 랜덤 런치 조 편성 안내*\n\n`;
+
+            groups.forEach((group, idx) => {
+                let isBuddyGroup = group.some(emp => emp.buddyId && group.some(b => b.id === emp.buddyId));
+                let buddyBadge = isBuddyGroup ? " [🤝 버디 조]" : "";
+
+                let memberInfo = group.map(emp => {
+                    let tags = [];
+                    tags.push(`[${emp.team}]`);
+                    if (emp.isNewHire) tags.push("🐥신규");
+                    return `${emp.name} ${tags.join('')}`;
+                }).join(' / ');
+
+                contentString += `*🔹 조 ${idx + 1} 조${buddyBadge}*\n  > ${memberInfo}\n\n`;
+            });
+
+            try {
+                await navigator.clipboard.writeText(contentString);
+                alert('👉 결과가 텍스트로 예쁘게 복사되었습니다!\n원하시는 슬랙 스레드 창에 가셔서 Ctrl+V(붙여넣기) 해주세요.');
+            } catch (err) {
+                // Fallback for older browsers or unstable contexts
+                const textArea = document.createElement("textarea");
+                textArea.value = contentString;
+                document.body.appendChild(textArea);
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                    alert('👉 결과가 텍스트로 예쁘게 복사되었습니다!\n원하시는 슬랙 스레드 창에 가셔서 Ctrl+V(붙여넣기) 해주세요.');
+                } catch (err2) {
+                    alert('클립보드 복사 중 오류가 발생했습니다.');
+                }
+                document.body.removeChild(textArea);
+            }
+        });
+    }
+
+    const saveSlackBtn = document.getElementById('save-slack-btn');
+    const slackWebhookInput = document.getElementById('slack-webhook-input');
+    if (saveSlackBtn && slackWebhookInput) {
+        saveSlackBtn.addEventListener('click', () => {
+            const url = slackWebhookInput.value.trim();
+            fbSet(fbRef(db, 'slackWebhook'), url);
+            alert('슬랙 알림 설정이 저장되었습니다.');
+        });
+    }
+
+    const sendSlackBtn = document.getElementById('send-slack-btn');
+    if (sendSlackBtn) {
+        sendSlackBtn.addEventListener('click', async () => {
+            if (!slackWebhookUrl || !slackWebhookUrl.startsWith('http')) {
+                alert('먼저 [매칭 규칙 관리] 탭 하단에서 슬랙 웹훅 URL을 올바르게 설정해주세요.');
+                return;
+            }
+            if (!groups || groups.length === 0) {
+                alert('전송할 매칭 결과(그룹)가 없습니다.');
+                return;
+            }
+            if (!confirm('현재 화면에 보이는 매칭 결과를 슬랙으로 전송하시겠습니까?')) return;
+
+            sendSlackBtn.textContent = '전송 중...';
+            sendSlackBtn.disabled = true;
+
+            const dateStr = matching.weekLabel ? matching.weekLabel.textContent : '이번 주';
+            let blocks = [
+                {
+                    "type": "header",
+                    "text": {
+                        "type": "plain_text",
+                        "text": `🥘 ${dateStr} 랜덤 런치 조 편성 안내`,
+                        "emoji": true
+                    }
+                },
+                {
+                    "type": "divider"
+                }
+            ];
+
+            groups.forEach((group, idx) => {
+                let isBuddyGroup = group.some(emp => emp.buddyId && group.some(b => b.id === emp.buddyId));
+                let buddyBadge = isBuddyGroup ? " [🤝 버디 조]" : "";
+
+                let memberInfo = group.map(emp => {
+                    let tags = [];
+                    tags.push(`[${emp.team}]`);
+                    if (emp.isNewHire) tags.push("🐥신규");
+                    return `*${emp.name}* ${tags.join('')}`;
+                }).join('   /   ');
+
+                blocks.push({
+                    "type": "section",
+                    "text": {
+                        "type": "mrkdwn",
+                        "text": `*🔹 조 ${idx + 1} 조*${buddyBadge}\n> ${memberInfo}`
+                    }
+                });
+            });
+
+            try {
+                const response = await fetch(slackWebhookUrl, {
+                    method: 'POST',
+                    body: JSON.stringify({ blocks: blocks })
+                });
+
+                if (response.ok || response.type === 'opaque') {
+                    // response.type === 'opaque' is an edge case if no-cors is mistakenly triggered or text/plain masked
+                    alert('슬랙 전송 완료! 슬랙 채널을 확인해보세요 🎉');
+                } else {
+                    alert('슬랙 전송 실패. 웹훅 주소가 정확한지 확인해주세요.');
+                }
+            } catch (err) {
+                // If it fails due to CORS, but message arrives, it throws sometimes
+                // We show success optimistically if it doesn't hard fail before fetch
+                var isLikelyCorsSuccess = err.message && err.message.toLowerCase().includes('fetch');
+                if(isLikelyCorsSuccess) {
+                   alert('슬랙 요청 전송 완료. (CORS 에러가 콘솔에 뜰 수 있으나, 슬랙 메시지가 도착했는지 확인해보세요)');
+                } else {
+                   alert('슬랙 전송 중 오류가 발생했습니다.');
+                }
+                console.error(err);
+            } finally {
+                sendSlackBtn.textContent = '💬 슬랙 결과 전송';
+                sendSlackBtn.disabled = false;
+            }
+        });
+    }
+
+
 
 
     // --- Authentication ---
