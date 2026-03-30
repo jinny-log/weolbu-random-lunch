@@ -879,6 +879,25 @@ document.addEventListener('DOMContentLoaded', () => {
             forceInsert(emp, null, true, 4); // No bucket constraint, desperation mode, allow up to 4 members
         });
 
+        // Sweep 3 (Absolute Guarantee): NO ONE eats alone!
+        // If forceInsert failed even in desperation mode, forcibly stuff them into ANY group that has space.
+        let ultimateStrandedGroups = newDraft.filter(g => g.length === 1);
+        if (ultimateStrandedGroups.length > 0) {
+            newDraft = newDraft.filter(g => g.length > 1);
+            let ultimateEmps = ultimateStrandedGroups.map(g => g[0]);
+            ultimateEmps.forEach(emp => {
+                // Find ANY group with less than 4 people, ignoring all rules
+                let targetGroup = newDraft.find(g => g.length < 4);
+                if (!targetGroup) targetGroup = newDraft.find(g => g.length < 5); // Fallback to 5
+                
+                if (targetGroup) {
+                    targetGroup.push(emp);
+                } else {
+                    newDraft.push([emp]); // Literally nowhere else to go (e.g. only 1 active employee)
+                }
+            });
+        }
+
         // Clean up the custom _maxLimit property from arrays before saving to Firebase!
         // Otherwise Firebase converts the Array into a plain JSON Object and breaks the UI!
         newDraft.forEach(g => { if (g._maxLimit !== undefined) delete g._maxLimit; });
