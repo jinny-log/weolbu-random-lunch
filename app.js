@@ -603,14 +603,19 @@ document.addEventListener('DOMContentLoaded', () => {
             let uniqueTeams = valArr.length;
 
             let score = 0;
-            if (group.length >= 2 && uniqueTeams === 1) score += 5000;
-            if (maxCount === 2 && group.length > 2) score += 500;
+            
+            // 같은 팀 2명이 묶이는 경우를 강력하게 찢어놓기 위한 패널티
+            if (group.length >= 2 && uniqueTeams === 1) {
+                score += 6000; // 2명으로만 묶인 동종팀: 최악 패널티 (~1800만)
+            } else if (maxCount === 2) {
+                score += 4800; // 3명 그룹 중 2명이 동종팀: 차악 패널티 (~1440만)
+            }
 
             // STRICTLY FORBID 3+ members from the SAME TEAM in the same group, even in buckets
             if (maxCount >= 3) {
                 // If it's a bucket and the bucket ONLY has ONE team type, we HAVE to allow it.
                 // Otherwise, penalize heavily.
-                score += 100000;
+                score += 100000; // (~3억)
             }
 
             return score;
@@ -664,11 +669,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
 
-            // 5000 penalty = 15,000,000 total (2-person homogenous)
-            // 100000 penalty = 300,000,000 total (3-person homogenous)
-            let maxAllowed = 14000000; // Strict mode: NO homogenous pairs allowed at all
+            let maxAllowed = 14000000; // 엄격 모드: 같은팀 2명이 있는 그룹(1440만점) 절대 불가! 무조건 다른 팀과 섞이게 유도함.
             if (desperationMode) {
-                maxAllowed = 16000000; // Desperation: ALLOW 2-person homogenous, but STILL reject 3-person homogenous!
+                maxAllowed = 20000000; // 절망 모드: 혼자 밥 먹는 것을 방지하기 위해, 최후의 수단으로만 같은팀 2명 허용(1800만점). 3명은 여전히 불가!
             } else if (isHomogenousBucket) {
                 maxAllowed = Infinity; // Pure homogenous buckets can do whatever they want
             }
@@ -1092,6 +1095,17 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    const resetPartBtn = document.getElementById('reset-participation-btn');
+    if (resetPartBtn) {
+        resetPartBtn.addEventListener('click', () => {
+            if (confirm('모든 구성원의 상태를 "오늘 참여 가능"으로 일괄 리셋하시겠습니까?')) {
+                employees.forEach(emp => emp.isParticipating = true);
+                saveEmployees();
+                alert('전원 참여 상태로 리셋되었습니다.');
+            }
+        });
+    }
+
     const deleteAllBtn = document.getElementById('delete-all-emp-btn');
     if (deleteAllBtn) {
         deleteAllBtn.addEventListener('click', () => {
@@ -1280,7 +1294,13 @@ document.addEventListener('DOMContentLoaded', () => {
             fbSet(fbRef(db, 'history'), matchHistory);
             clearDraft();
 
-            alert(`${dateStr} 매칭 결과가 저장 및 확정(Publish) 되었습니다!\n일반 사용자 화면은 '임시 뱃지'가 사라지고 실시간으로 확정본으로 업데이트됩니다.`);
+            // 확정 저장 시 "오늘 안먹을래요" 한 사람들 전원 다음주를 위해 자동 리셋
+            employees.forEach(emp => {
+                emp.isParticipating = true;
+            });
+            saveEmployees();
+
+            alert(`${dateStr} 매칭 결과가 저장 및 확정(Publish) 되었습니다!\n\n💡 불참자(안먹을래요) 상태도 모두 '참여 가능'으로 자동 리셋되었습니다!`);
         });
     }
 

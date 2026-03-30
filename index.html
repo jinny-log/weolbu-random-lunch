@@ -194,9 +194,13 @@
           <div style="max-width: 800px; margin: 0 auto;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
               <h3 style="font-size: 1.1rem; margin: 0;">현재 구성원 목록</h3>
-              <button id="delete-all-emp-btn" class="delete-btn"
-                style="padding: 0.4rem 0.8rem; background: #FEF2F2; color: #EF4444; border: 1px solid #FCA5A5;">전체 구성원
-                삭제</button>
+              <div style="display: flex; gap: 0.5rem;">
+                <button id="reset-participation-btn" class="secondary-btn"
+                  style="padding: 0.4rem 0.8rem; font-size: 0.85rem; background: #E0E7FF; color: #4338CA; border: 1px solid #C7D2FE;">🔄 전원 참여구분(참여) 리셋</button>
+                <button id="delete-all-emp-btn" class="delete-btn"
+                  style="padding: 0.4rem 0.8rem; background: #FEF2F2; color: #EF4444; border: 1px solid #FCA5A5;">전체 구성원
+                  삭제</button>
+              </div>
             </div>
             <ul id="employee-list" class="glass-list">
               <!-- Employee items will be injected here -->
