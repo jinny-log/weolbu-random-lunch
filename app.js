@@ -257,17 +257,17 @@ document.addEventListener('DOMContentLoaded', () => {
         tableDiv.style.left = '-9999px';
         tableDiv.style.top = '-9999px';
         tableDiv.style.background = '#FFFFFF';
-        tableDiv.style.padding = '30px';
-        tableDiv.style.width = '1200px'; 
+        tableDiv.style.padding = '40px';
+        tableDiv.style.width = '1400px'; 
         tableDiv.style.fontFamily = "'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif";
         tableDiv.style.boxSizing = 'border-box';
         
         let tableHtml = `
-        <h2 style="margin: 0 0 20px 0; color: #111827; font-size: 28px; text-align: center;">🍲 ${weekStr} 랜덤 런치 조 편성 표</h2>
-        <table style="width: 100%; border-collapse: collapse; border: 2px solid #374151;">
+        <h2 style="margin: 0 0 30px 0; color: #111827; font-size: 38px; text-align: center; letter-spacing: -0.5px;">🍲 ${weekStr} 랜덤 런치 조 편성 표</h2>
+        <table style="width: 100%; border-collapse: collapse; border: 3px solid #374151;">
         <tbody>`;
         
-        const cols = 4;
+        const cols = 3;
         let groupIdx = 0;
         for (let i = 0; i < groups.length; i += cols) {
             tableHtml += `<tr>`;
@@ -275,20 +275,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (groupIdx < groups.length) {
                     let g = groups[groupIdx];
                     let isBuddyGroup = g.some(emp => emp.buddyId && g.some(b => b.id === emp.buddyId));
-                    let badge = isBuddyGroup ? `<span style="color:#D97706; font-size:13px; margin-left:4px;">(🤝버디)</span>` : "";
+                    let badge = isBuddyGroup ? `<span style="color:#D97706; font-size:18px; margin-left:8px; font-weight: 600;">(🤝버디 조)</span>` : "";
                     
                     let memberStr = g.map(e => {
                         let tag = e.isNewHire ? '🐥' : '';
-                        return `<span style="display:inline-block; padding:2px 6px; background:#F3F4F6; border-radius:4px; margin:2px;">${e.name}${tag}</span>`;
+                        return `<span style="display:inline-block; padding:6px 12px; background:#F3F4F6; border-radius:8px; margin:4px 8px 4px 0; font-weight: 600; color: #1F2937; border: 1px solid #E5E7EB;">${e.name}${tag}</span>`;
                     }).join('');
                     
                     tableHtml += `
-                    <td style="border: 1px solid #D1D5DB; padding: 14px; vertical-align: top; width: 25%;">
-                        <div style="font-weight: 700; margin-bottom: 8px; color: #374151; font-size: 16px; border-bottom: 1px solid #E5E7EB; padding-bottom: 6px;">조 ${groupIdx+1} ${badge}</div>
-                        <div style="font-size: 15px; color: #111827; line-height: 1.5;">${memberStr}</div>
+                    <td style="border: 1px solid #D1D5DB; padding: 24px; vertical-align: top; width: 33.3%;">
+                        <div style="font-weight: 800; margin-bottom: 16px; color: #374151; font-size: 24px; border-bottom: 2px solid #E5E7EB; padding-bottom: 12px;">조 ${groupIdx+1} ${badge}</div>
+                        <div style="font-size: 20px; color: #111827; line-height: 1.6;">${memberStr}</div>
                     </td>`;
                 } else {
-                    tableHtml += `<td style="border: 1px solid #D1D5DB; padding: 14px; width: 25%; background: #F9FAFB;"></td>`;
+                    tableHtml += `<td style="border: 1px solid #D1D5DB; padding: 24px; width: 33.3%; background: #F9FAFB;"></td>`;
                 }
                 groupIdx++;
             }
