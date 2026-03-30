@@ -308,87 +308,100 @@ document.addEventListener('DOMContentLoaded', () => {
     const slackWebhookInput = document.getElementById('slack-webhook-input');
     if (saveSlackBtn && slackWebhookInput) {
         saveSlackBtn.addEventListener('click', () => {
-            const url = slackWebhookInput.value.trim();
-            fbSet(fbRef(db, 'slackWebhook'), url);
-            alert('슬랙 알림 설정이 저장되었습니다.');
+            const token = slackWebhookInput.value.trim();
+            fbSet(fbRef(db, 'slackWebhook'), token);
+            document.getElementById('slack-save-msg').style.display = 'block';
+            setTimeout(() => document.getElementById('slack-save-msg').style.display = 'none', 3000);
         });
     }
 
     const sendSlackBtn = document.getElementById('send-slack-btn');
     if (sendSlackBtn) {
         sendSlackBtn.addEventListener('click', async () => {
-            if (!slackWebhookUrl || !slackWebhookUrl.startsWith('http')) {
-                alert('먼저 [매칭 규칙 관리] 탭 하단에서 슬랙 웹훅 URL을 올바르게 설정해주세요.');
-                return;
+            const threadLinkInput = document.getElementById('slack-thread-link');
+            const threadUrl = threadLinkInput ? threadLinkInput.value.trim() : '';
+            
+            if (!groups || groups.length === 0) return alert('보낼 매칭 결과가 없습니다.');
+            if (!slackWebhookUrl || !slackWebhookUrl.startsWith('xoxb-')) {
+                return alert('슬랙 봇(Bot) 토큰 설정이 안되어 있거나 올바르지 않습니다. [매칭 규칙 관리] 탭 하단에서 xoxb- 로 시작하는 토큰을 저장해주세요.');
             }
-            if (!groups || groups.length === 0) {
-                alert('전송할 매칭 결과(그룹)가 없습니다.');
-                return;
+            if (!threadUrl) {
+                return alert('알림을 보낼 "슬랙 메시지 링크"를 상단 입력칸에 붙여넣어주세요!');
             }
-            if (!confirm('현재 화면에 보이는 매칭 결과를 슬랙으로 전송하시겠습니까?')) return;
 
-            sendSlackBtn.textContent = '전송 중...';
+            const match = threadUrl.match(/\/archives\/([A-Z0-9]+)\/p(\d+)/);
+            if (!match) {
+                return alert('올바른 슬랙 메시지 링크가 아닙니다. 해당 스레드 메시지의 [링크 복사] 기능으로 정확하게 가져와주세요.');
+            }
+            
+            const channelId = match[1];
+            const rawTs = match[2];
+            const threadTs = rawTs.slice(0, Math.max(0, rawTs.length - 6)) + '.' + rawTs.slice(-6);
+
+            const targetElement = document.getElementById('matching-results');
+            if (!targetElement) return;
+
+            if (!confirm('현재 화면에 보이는 예쁜 매칭표를 사진으로 찰칵 찍어 슬랙 스레드로 쏘시겠습니까?')) return;
+
+            sendSlackBtn.textContent = '스레드로 쏘는 중... 🚀';
             sendSlackBtn.disabled = true;
 
-            const dateStr = matching.weekLabel ? matching.weekLabel.textContent : '이번 주';
-            let blocks = [
-                {
-                    "type": "header",
-                    "text": {
-                        "type": "plain_text",
-                        "text": `🥘 ${dateStr} 랜덤 런치 조 편성 안내`,
-                        "emoji": true
-                    }
-                },
-                {
-                    "type": "divider"
-                }
-            ];
-
-            groups.forEach((group, idx) => {
-                let isBuddyGroup = group.some(emp => emp.buddyId && group.some(b => b.id === emp.buddyId));
-                let buddyBadge = isBuddyGroup ? " [🤝 버디 조]" : "";
-
-                let memberInfo = group.map(emp => {
-                    let tags = [];
-                    tags.push(`[${emp.team}]`);
-                    if (emp.isNewHire) tags.push("🐥신규");
-                    return `*${emp.name}* ${tags.join('')}`;
-                }).join('   /   ');
-
-                blocks.push({
-                    "type": "section",
-                    "text": {
-                        "type": "mrkdwn",
-                        "text": `*🔹 조 ${idx + 1} 조*${buddyBadge}\n> ${memberInfo}`
-                    }
-                });
-            });
-
             try {
-                const response = await fetch(slackWebhookUrl, {
-                    method: 'POST',
-                    body: JSON.stringify({ blocks: blocks })
-                });
+                if (typeof html2canvas === 'undefined') throw new Error('html2canvas library is not loaded');
 
-                if (response.ok || response.type === 'opaque') {
-                    // response.type === 'opaque' is an edge case if no-cors is mistakenly triggered or text/plain masked
-                    alert('슬랙 전송 완료! 슬랙 채널을 확인해보세요 🎉');
-                } else {
-                    alert('슬랙 전송 실패. 웹훅 주소가 정확한지 확인해주세요.');
-                }
-            } catch (err) {
-                // If it fails due to CORS, but message arrives, it throws sometimes
-                // We show success optimistically if it doesn't hard fail before fetch
-                var isLikelyCorsSuccess = err.message && err.message.toLowerCase().includes('fetch');
-                if(isLikelyCorsSuccess) {
-                   alert('슬랙 요청 전송 완료. (CORS 에러가 콘솔에 뜰 수 있으나, 슬랙 메시지가 도착했는지 확인해보세요)');
-                } else {
-                   alert('슬랙 전송 중 오류가 발생했습니다.');
-                }
-                console.error(err);
-            } finally {
-                sendSlackBtn.textContent = '💬 슬랙 결과 전송';
+                const originalStyle = targetElement.style.cssText;
+                targetElement.style.padding = '20px';
+                targetElement.style.background = '#FFFFFF';
+                targetElement.style.borderRadius = '16px';
+                targetElement.style.boxShadow = '0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01)';
+
+                const canvas = await html2canvas(targetElement, {
+                    scale: 2,
+                    backgroundColor: '#F9FAFB',
+                    useCORS: true
+                });
+                targetElement.style.cssText = originalStyle;
+
+                canvas.toBlob(async (blob) => {
+                    if (!blob) throw new Error('Blob generation failed');
+                    
+                    const dateStr = matching.weekLabel ? matching.weekLabel.textContent : '이번 주';
+                    const formData = new FormData();
+                    formData.append('channels', channelId);
+                    formData.append('thread_ts', threadTs);
+                    formData.append('initial_comment', `🥘 *${dateStr} 랜덤 런치 조 편성 결과* 안내드립니다. 확인해 주세요! (결과는 아래 표를 터치해서 크게 보세요 ✨)`);
+                    formData.append('file', blob, 'random-lunch-groups.png');
+
+                    try {
+                        const response = await fetch('https://slack.com/api/files.upload', {
+                            method: 'POST',
+                            headers: {
+                                'Authorization': `Bearer ${slackWebhookUrl}`
+                            },
+                            body: formData
+                        });
+
+                        const data = await response.json();
+                        if (data.ok) {
+                            alert('🎉 슬랙 지정하신 스레드로 결과 이미지 전송이 눈 깜짝할 새 완료되었습니다!');
+                            if (threadLinkInput) threadLinkInput.value = ''; // clear input on success
+                        } else {
+                            console.error('Slack API Error:', data);
+                            alert(`슬랙 전송 실패: ${data.error}\n(우리가 만든 슬랙 앱이 해당 채널에 초대되어 있는지 꼭 확인해 주시고, files:write 권한이 있는지 확인하세요!)`);
+                        }
+                    } catch (fetchErr) {
+                        console.error(fetchErr);
+                        alert('슬랙 전송 중 네트워크 요류가 발생했습니다.');
+                    } finally {
+                        sendSlackBtn.textContent = '💬 스레드로 자동 전송';
+                        sendSlackBtn.disabled = false;
+                    }
+                }, "image/png", 1.0);
+
+            } catch (error) {
+                console.error('Slack image capture error:', error);
+                alert('이미지 캡처 중 오류가 발생하여 전송을 취소했습니다.');
+                sendSlackBtn.textContent = '💬 스레드로 자동 전송';
                 sendSlackBtn.disabled = false;
             }
         });
