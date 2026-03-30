@@ -459,6 +459,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
             globalEmp.isParticipating = !globalEmp.isParticipating;
             currentUser.isParticipating = globalEmp.isParticipating;
+
+            // 핵심 편의기능: 만약 현재 "진행 중인 매칭 결과(그룹)"가 있는데
+            // 구성원이 "나 오늘 안먹을래!"를 눌렀다면, 매칭 조에서 즉시 쏙 빼버립니다!
+            if (!globalEmp.isParticipating && groups && groups.length > 0) {
+                let draftChanged = false;
+                let newGroups = groups.map(g => {
+                    let filtered = g.filter(member => member.id !== globalEmp.id);
+                    if (filtered.length !== g.length) draftChanged = true;
+                    return filtered;
+                }).filter(g => g.length > 0); // 남아있는 사람이 없으면 그룹 폭파
+                
+                if (draftChanged) {
+                    groups = newGroups;
+                    saveDraft(groups); // 파이어베이스에 즉시 동기화해 관리자 화면에서 즉각 쏙 사라지게 함
+                }
+            }
+
             saveEmployees(); // Syncs to everyone instantly!
         }
     });
@@ -968,8 +985,25 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('.toggle-status-chk').forEach(chk => {
             chk.addEventListener('change', (e) => {
                 const emp = employees.find(emp => emp.id == e.target.dataset.id);
-                if (emp) emp.isParticipating = e.target.checked;
-                saveEmployees();
+                if (emp) {
+                    emp.isParticipating = e.target.checked;
+                    
+                    // 관리자가 수동으로 불참 처리(토글 OFF) 했을 때도, 진행중인 조 편성에서 즉각 빼버립니다.
+                    if (!emp.isParticipating && groups && groups.length > 0) {
+                        let draftChanged = false;
+                        let newGroups = groups.map(g => {
+                            let filtered = g.filter(member => member.id !== emp.id);
+                            if (filtered.length !== g.length) draftChanged = true;
+                            return filtered;
+                        }).filter(g => g.length > 0);
+                        
+                        if (draftChanged) {
+                            groups = newGroups;
+                            saveDraft(groups); // 매칭 결과 카드에서 즉시 증발! (새로고침 매칭 안해도 됨)
+                        }
+                    }
+                    saveEmployees();
+                }
             });
         });
     }
