@@ -263,43 +263,55 @@ document.addEventListener('DOMContentLoaded', () => {
         tableDiv.style.position = 'absolute';
         tableDiv.style.left = '-9999px';
         tableDiv.style.top = '-9999px';
-        tableDiv.style.background = 'linear-gradient(135deg, #F8FAFC 0%, #E2E8F0 100%)';
+        tableDiv.style.background = '#FFFFFF';
         tableDiv.style.padding = '40px';
         tableDiv.style.width = '1400px'; 
         tableDiv.style.fontFamily = "'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif";
         tableDiv.style.boxSizing = 'border-box';
         
+        // Clean Minimal Header
         let html = `
-        <div style="text-align: center; margin-bottom: 30px; background: white; padding: 20px; border-radius: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); border: 1px solid #E2E8F0;">
-            <h2 style="margin: 0; color: #0F172A; font-size: 34px; font-weight: 800; letter-spacing: -0.5px;">🍙 ${weekStr} 랜덤 런치 조 편성</h2>
+        <div style="text-align: center; margin-bottom: 24px;">
+            <h2 style="margin: 0; color: #111827; font-size: 38px; font-weight: 800; letter-spacing: -0.5px;">🍙 ${weekStr} 랜덤 런치 조 편성 표</h2>
         </div>
-        <div style="display: flex; flex-wrap: wrap; gap: 20px; justify-content: flex-start;">`;
+        <table style="width: 100%; border-collapse: collapse; border: 2px solid #CBD5E1;">
+        <tbody>`;
         
-        const borderColors = ['#3B82F6', '#10B981', '#F59E0B', '#8B5CF6', '#EC4899', '#14B8A6'];
+        const cols = 5; 
+        let groupIdx = 0;
         
-        groups.forEach((g, idx) => {
-            let topColor = borderColors[idx % borderColors.length];
-            let isBuddyGroup = g.some(emp => emp.buddyId && g.some(b => b.id === emp.buddyId));
-            let badge = isBuddyGroup ? `<span style="font-size: 14px; background: #FEF3C7; color: #D97706; padding: 4px 10px; border-radius: 12px; font-weight: 700; border: 1px solid #FDE68A;">🤝 버디조</span>` : "";
-            
-            let memberStr = g.map(e => {
-                let tag = e.isNewHire ? '🐥' : '';
-                return `<span style="display:inline-block; padding:6px 10px; background:#F1F5F9; border-radius:8px; font-weight: 600; color: #334155; font-size: 17px; border: 1px solid #E2E8F0;">${e.name}${tag}</span>`;
-            }).join('');
-            
-            html += `
-            <div style="background: white; border-radius: 16px; padding: 16px 20px; width: 315px; box-sizing: border-box; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03); border: 1px solid #E2E8F0; border-top: 5px solid ${topColor}; display: flex; flex-direction: column;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid #F1F5F9; padding-bottom: 10px;">
-                    <span style="font-size: 20px; font-weight: 800; color: #0F172A;">조 ${idx + 1}</span>
-                    ${badge}
-                </div>
-                <div style="display: flex; flex-wrap: wrap; gap: 6px;">
-                    ${memberStr}
-                </div>
-            </div>`;
-        });
+        for (let i = 0; i < groups.length; i += cols) {
+            html += `<tr>`;
+            for (let j = 0; j < cols; j++) {
+                if (groupIdx < groups.length) {
+                    let g = groups[groupIdx];
+                    let isBuddyGroup = g.some(emp => emp.buddyId && g.some(b => b.id === emp.buddyId));
+                    let badge = isBuddyGroup ? `<span style="font-size: 14px; color: #D97706; font-weight: 700; margin-left: auto;">🤝버디</span>` : "";
+                    
+                    let memberStr = g.map(e => {
+                        let tag = e.isNewHire ? '🐥' : '';
+                        return `<span style="display:inline-block; padding: 5px 10px; background: #F1F5F9; border-radius: 6px; font-weight: 600; color: #334155; font-size: 16px; margin: 3px 4px 3px 0; border: 1px solid #E2E8F0;">${e.name}${tag}</span>`;
+                    }).join('');
+                    
+                    html += `
+                    <td style="border: 1px solid #E2E8F0; padding: 18px; vertical-align: top; width: 20%;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; border-bottom: 2px solid #F1F5F9; padding-bottom: 8px;">
+                            <span style="font-size: 19px; font-weight: 800; color: #0F172A;">조 ${groupIdx + 1}</span>
+                            ${badge}
+                        </div>
+                        <div style="display: flex; flex-wrap: wrap; line-height: 1;">
+                            ${memberStr}
+                        </div>
+                    </td>`;
+                } else {
+                    html += `<td style="border: 1px solid #E2E8F0; padding: 18px; width: 20%; background: #F8FAFC;"></td>`;
+                }
+                groupIdx++;
+            }
+            html += `</tr>`;
+        }
         
-        html += `</div>`;
+        html += `</tbody></table>`;
         tableDiv.innerHTML = html;
         document.body.appendChild(tableDiv);
         return tableDiv;
@@ -522,7 +534,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (historyManager.saveBtn) historyManager.saveBtn.style.display = 'none';
 
             if (groups && groups.length > 0) {
-                renderGroups(groups, matching.weekLabel.textContent + " (진행 중)", true);
+                renderGroups(groups, savedDateLabel + " (진행 중)", true);
             } else if (matchHistory && matchHistory.length > 0) {
                 let latestMatch = matchHistory[0];
                 renderGroups(latestMatch.groups, latestMatch.date, false);
