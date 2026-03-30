@@ -270,7 +270,7 @@ document.addEventListener('DOMContentLoaded', () => {
         tableDiv.style.boxSizing = 'border-box';
         
         let tableHtml = `
-        <h2 style="margin: 0 0 20px 0; color: #111827; font-size: 32px; text-align: center; letter-spacing: -0.5px;">🍲 ${weekStr} 랜덤 런치 조 편성 표</h2>
+        <h2 style="margin: 0 0 20px 0; color: #111827; font-size: 32px; text-align: center; letter-spacing: -0.5px;">🍙 ${weekStr} 랜덤 런치 조 편성 표</h2>
         <table style="width: 100%; border-collapse: collapse; border: 2px solid #374151;">
         <tbody>`;
         
