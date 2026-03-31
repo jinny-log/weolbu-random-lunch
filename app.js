@@ -866,7 +866,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         let strandedEmps = strandedGroups.map(g => g[0]);
         strandedEmps.forEach(emp => {
-            forceInsert(emp, null, false, 4); // No bucket constraint, strict mode, allow up to 4 members
+            forceInsert(emp, null, false, 3); // No bucket constraint, strict mode, STRICT max 3 members
         });
 
         // Sweep 2 (Desperation): If we STILL have 1-person groups (e.g. only 1 team left globally, and all other groups are full)
@@ -876,24 +876,32 @@ document.addEventListener('DOMContentLoaded', () => {
 
         let superStrandedEmps = superStrandedGroups.map(g => g[0]);
         superStrandedEmps.forEach(emp => {
-            forceInsert(emp, null, true, 4); // No bucket constraint, desperation mode, allow up to 4 members
+            forceInsert(emp, null, true, 3); // No bucket constraint, desperation mode, STRICT max 3 members
         });
 
-        // Sweep 3 (Absolute Guarantee): NO ONE eats alone!
-        // If forceInsert failed even in desperation mode, forcibly stuff them into ANY group that has space.
+        // Sweep 3 (Absolute Guarantee): NO ONE eats alone AND NO 4-person groups!
+        // If forceInsert failed even in desperation mode, forcibly stuff them into ANY group that has space (size < 3).
         let ultimateStrandedGroups = newDraft.filter(g => g.length === 1);
         if (ultimateStrandedGroups.length > 0) {
             newDraft = newDraft.filter(g => g.length > 1);
             let ultimateEmps = ultimateStrandedGroups.map(g => g[0]);
             ultimateEmps.forEach(emp => {
-                // Find ANY group with less than 4 people, ignoring all rules
-                let targetGroup = newDraft.find(g => g.length < 4);
-                if (!targetGroup) targetGroup = newDraft.find(g => g.length < 5); // Fallback to 5
+                // Find ANY group with less than 3 people, ignoring all rules
+                let targetGroup = newDraft.find(g => g.length < 3);
                 
                 if (targetGroup) {
                     targetGroup.push(emp);
                 } else {
-                    newDraft.push([emp]); // Literally nowhere else to go (e.g. only 1 active employee)
+                    // Absolutely NO groups with less than 3 people exist (meaning ALL groups are strictly size 3).
+                    // To avoid a 4-person group, we must POP one member from a 3-person group 
+                    // and pair them with this stranded member to form a new 2-person group!
+                    if (newDraft.length > 0) {
+                        let displacedMember = newDraft[0].pop();
+                        newDraft.push([displacedMember, emp]);
+                    } else {
+                        // Literally no other groups exist (e.g. only 1 active employee globally)
+                        newDraft.push([emp]); 
+                    }
                 }
             });
         }
