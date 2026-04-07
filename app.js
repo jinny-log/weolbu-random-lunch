@@ -423,15 +423,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 const tableDiv = createTempTableForScreenshot(groups, dateStr);
 
                 const canvas = await html2canvas(tableDiv, {
-                    scale: 2,
+                    scale: 1.5,
                     backgroundColor: '#FFFFFF',
                     useCORS: true
                 });
 
                 document.body.removeChild(tableDiv);
                 
-                // Base64 이미지를 가져와 Vercel 백엔드로 전송
-                const imageBase64 = canvas.toDataURL("image/png");
+                // Base64 이미지를 가져와 Vercel 백엔드로 전송 (용량 제한 회피를 위해 JPEG 압축 활용)
+                const imageBase64 = canvas.toDataURL("image/jpeg", 0.85);
 
                 // Vercel Serverless Function 호출 (CORS 우회 및 이미지 첨부 지원)
                 const response = await fetch('/api/slack', {

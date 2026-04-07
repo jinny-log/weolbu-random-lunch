@@ -7,7 +7,7 @@ module.exports = async function handler(req, res) {
         const payload = req.body;
         
         if (payload.imageBase64) {
-            const base64Data = payload.imageBase64.replace(/^data:image\/png;base64,/, "");
+            const base64Data = payload.imageBase64.replace(/^data:image\/\w+;base64,/, "");
             const bufferFile = Buffer.from(base64Data, 'base64');
             const fileLength = bufferFile.length;
             
