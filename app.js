@@ -90,10 +90,28 @@ document.addEventListener('DOMContentLoaded', () => {
         '클래스팀': { bg: '#E0F2FE', text: '#0369A1' },
         '콘텐츠팀': { bg: '#EDE9FE', text: '#6D28D9' },
         '부동산팀': { bg: '#FAE8FF', text: '#A21CAF' },
-        '프롭테크팀': { bg: '#F1F5F9', text: '#334155' },
-        '프롭테크/클래스스쿼드': { bg: '#E2E8F0', text: '#0F172A' }
+        '프롭테크팀': { bg: '#D8B4FE', text: '#6B21A8' }, // Bright Purple
+        '클래스스쿼드': { bg: '#A7F3D0', text: '#065F46' }, // Bright Emerald
+        '프롭테크/클래스스쿼드': { bg: '#FDE047', text: '#854D0E' }, // Bright Yellow
+        '중개팀': { bg: '#FBCFE8', text: '#9D174D' } // Bright Pink
     };
-    function getTeamColor(team) { return teamColors[team] || { bg: '#F3F4F6', text: '#4B5563' }; }
+
+    const fallbackPalette = [
+        { bg: '#C7D2FE', text: '#3730A3' }, // Indigo
+        { bg: '#FCA5A5', text: '#7F1D1D' }, // Red
+        { bg: '#99F6E4', text: '#0F766E' }, // Teal
+        { bg: '#E9D5FF', text: '#581C87' }, // Purple
+        { bg: '#BAE6FD', text: '#0369A1' }, // Sky
+        { bg: '#FECACA', text: '#991B1B' }, // Rose
+        { bg: '#FEF08A', text: '#A16207' }  // Amber
+    ];
+
+    function getTeamColor(team) { 
+        if (teamColors[team]) return teamColors[team];
+        let hash = 0;
+        for (let i = 0; i < team.length; i++) hash = team.charCodeAt(i) + ((hash << 5) - hash);
+        return fallbackPalette[Math.abs(hash) % fallbackPalette.length];
+    }
 
     // --- DOM Elements ---
     const views = { login: document.getElementById('login-view'), admin: document.getElementById('admin-view'), loading: document.createElement('div') };
