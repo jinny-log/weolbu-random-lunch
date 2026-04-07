@@ -90,9 +90,9 @@ document.addEventListener('DOMContentLoaded', () => {
         '클래스팀': { bg: '#E0F2FE', text: '#0369A1' },
         '콘텐츠팀': { bg: '#EDE9FE', text: '#6D28D9' },
         '부동산팀': { bg: '#FAE8FF', text: '#A21CAF' },
-        '프롭테크팀': { bg: '#D8B4FE', text: '#6B21A8' }, // Bright Purple
+        '프롭테크팀': { bg: '#FDE047', text: '#854D0E' }, // Bright Yellow
         '클래스스쿼드': { bg: '#A7F3D0', text: '#065F46' }, // Bright Emerald
-        '프롭테크/클래스스쿼드': { bg: '#FDE047', text: '#854D0E' }, // Bright Yellow
+        '프롭테크/클래스스쿼드': { bg: '#D8B4FE', text: '#6B21A8' }, // Bright Purple
         '중개팀': { bg: '#FBCFE8', text: '#9D174D' } // Bright Pink
     };
 
